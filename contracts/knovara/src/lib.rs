@@ -3685,10 +3685,7 @@ mod tests {
             expires_at,
         } = active.status
         {
-            assert_eq!(
-                expires_at,
-                activated_at + (30 * 86_400 * 1_000_000_000u64)
-            );
+            assert_eq!(expires_at, activated_at + (30 * 86_400 * 1_000_000_000u64));
         }
     }
 
@@ -4721,8 +4718,8 @@ mod tests {
 
         // Liabilities strictly equal total claimable royalties
         assert_eq!(contract.get_total_royalty_liabilities().0, 50_000);
-        let sum_claimable = contract.get_claimable_balance(bob()).0
-            + contract.get_claimable_balance(charlie()).0;
+        let sum_claimable =
+            contract.get_claimable_balance(bob()).0 + contract.get_claimable_balance(charlie()).0;
         assert_eq!(sum_claimable, contract.total_royalty_liabilities);
     }
 
@@ -4768,7 +4765,7 @@ mod tests {
             "disc-audit1".to_string(),
             "tok-audit1".to_string(),
             Some(bob()), // Custodian
-            charlie(),  // Rights Controller (NOT a beneficiary)
+            charlie(),   // Rights Controller (NOT a beneficiary)
             sample_manifest_hash(),
             sample_metadata(),
             splits,
@@ -4795,7 +4792,11 @@ mod tests {
 
         // Dave requests license
         setup_context(dave(), 0);
-        contract.request_license("req-audit1".to_string(), "off-audit1".to_string(), terms.clone());
+        contract.request_license(
+            "req-audit1".to_string(),
+            "off-audit1".to_string(),
+            terms.clone(),
+        );
 
         // Charlie approves request
         setup_context(charlie(), 0);
@@ -4979,8 +4980,8 @@ mod tests {
         );
 
         let bal_after = contract.storage_balance_of(alice()).unwrap();
-        let bytes_spent = (bal.available.0 - bal_after.available.0)
-            / env::storage_byte_cost().as_yoctonear();
+        let bytes_spent =
+            (bal.available.0 - bal_after.available.0) / env::storage_byte_cost().as_yoctonear();
         assert!(bytes_spent > 0);
 
         // Solvency mathematical model verification:

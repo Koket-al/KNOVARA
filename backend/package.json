@@ -1,0 +1,35 @@
+{
+  "name": "knovara-backend",
+  "version": "1.0.0",
+  "description": "KNOVARA Backend API — Wallet-Native NEP-413 Authentication & Licensing Engine",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "NODE_ENV=test node --test tests/*.test.js"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1164.0",
+    "@aws-sdk/s3-request-presigner": "^3.1164.0",
+    "borsh": "^2.0.0",
+    "bs58": "^6.0.0",
+    "connect-mongo": "^5.1.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "express-session": "^1.18.1",
+    "helmet": "^8.0.0",
+    "json-canonicalize": "^3.0.1",
+    "mongoose": "^8.9.5",
+    "tweetnacl": "^1.0.3"
+  },
+  "devDependencies": {
+    "supertest": "^7.0.0"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  }
+}

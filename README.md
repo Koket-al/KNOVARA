@@ -50,23 +50,32 @@ The KNOVARA smart contract is implemented as a single, unified NEAR contract wri
 ## 2. Directory Structure
 
 ```text
-contracts/knovara/
-├── Cargo.toml                       # near-sdk 5.30.1, near-contract-standards 5.30.1, hex 0.4.3
-├── src/
-│   ├── lib.rs                       # Contract state, init, dynamic measurement, and 172 unit tests
-│   ├── discovery.rs                 # register_discovery_and_mint, view methods, digest utilities
-│   ├── nft.rs                       # NEP-171 Non-Transferable core, NEP-177 metadata & view methods
-│   ├── licensing.rs                 # Offers, requests, approvals, rejections, scope definitions
-│   ├── payments.rs                  # Payments, activations, royalty accounting, pull withdrawals, expirations
-│   ├── events.rs                    # NEP-297 event logging (nft_mint, licensing events)
-│   └── storage.rs                   # NEP-145 storage management, dependency counters, rollback callbacks
-├── tests/
-│   ├── test_storage_workspaces.rs   # NEAR Sandbox integration tests for NEP-145 Storage (4 tests)
-│   ├── test_discovery_workspaces.rs # NEAR Sandbox integration tests for Discovery & NFT (6 tests)
-│   ├── test_license_workspaces.rs   # NEAR Sandbox integration tests for Licensing Lifecycle (9 tests)
-│   └── test_payment_workspaces.rs   # NEAR Sandbox integration tests for Payments & Royalties (8 tests)
-└── target/wasm32-unknown-unknown/release/
-    └── knovara.wasm                 # Compiled Wasm binary (594 KB)
+knovara/
+├── contracts/knovara/               # Smart contract engine (Stages 3.1 – 3.4)
+│   ├── Cargo.toml                   # near-sdk 5.30.1, near-contract-standards 5.30.1, hex 0.4.3
+│   ├── src/                         # lib.rs, discovery.rs, nft.rs, licensing.rs, payments.rs, etc.
+│   ├── tests/                       # 27 NEAR Sandbox integration tests
+│   └── target/wasm32-unknown-unknown/release/knovara.wasm
+├── backend/                         # Express API, NEP-413 Auth & R2 Evidence Engine (Stages 4.2 – 4.3)
+│   ├── package.json                 # Node.js 24 LTS, AWS SDK v3, json-canonicalize, borsh, tweetnacl
+│   ├── .env.example                 # Configuration template for Testnet, MongoDB Atlas & Cloudflare R2
+│   ├── src/
+│   │   ├── server.js                # Server entry point & graceful shutdown
+│   │   ├── app.js                   # Express application factory & middleware pipeline
+│   │   ├── config/                  # env.js, database.js
+│   │   ├── models/                  # User, AuthChallenge, EvidenceUpload, EvidenceManifest, PublicMetadataDescriptor
+│   │   ├── routes/                  # health.js, auth.js, evidence.js, metadata.js
+│   │   ├── services/                # authVerifier.js, nearRpc.js, r2Storage.js, manifestBuilder.js
+│   │   └── middleware/              # auth.js (requireAuth), rateLimiter.js, errorHandler.js
+│   └── tests/                       # 72 automated unit & integration tests
+│       ├── app.test.js              # Health, headers, CORS, 404
+│       ├── models.test.js           # User, AuthChallenge, atomic consumption, upsert
+│       ├── nep413.test.js           # NEP-413 Borsh tag 2^31+413, Ed25519 signing/verifying
+│       ├── authFlow.test.js         # Challenge -> Verify -> Session -> Logout lifecycle
+│       ├── security.test.js         # requireAuth, session fixation rotation, secret safety
+│       ├── securityReview.test.js   # Nonce consumption order, concurrent replay, proxy cookies, callback whitelist
+│       ├── rfc8785.test.js          # JCS canonicalization, sorting invariants, Unicode test vectors
+│       └── evidencePipeline.test.js # Evidence upload lifecycle, R2 presigned PUTs, streaming SHA-256, NEP-177 descriptor
 ```
 
 ---
@@ -89,6 +98,25 @@ cargo test
 
 # 4. Compile optimized release WebAssembly binary
 cargo build --target wasm32-unknown-unknown --release
+```
+
+### Backend (Node.js 24 LTS & Express)
+All commands run inside `backend`:
+
+```bash
+cd backend
+
+# 1. Install dependencies
+npm install
+
+# 2. Run automated test suite (72 Unit & Integration Tests)
+npm test
+
+# 3. Run development server with watch mode
+npm run dev
+
+# 4. Start production server
+npm start
 ```
 
 ---
