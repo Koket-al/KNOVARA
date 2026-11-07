@@ -1,0 +1,32 @@
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Credentials and private keys
+*.pem
+*.key
+*.p12
+*.pfx
+*.seed
+.near-credentials/
+credentials/
+
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+target/
+coverage/
+
+# Deployment and tooling
+.vercel/
+.render/
+.wrangler/
+.cache/
+
+# Generated files
+*.log
+.DS_Store
