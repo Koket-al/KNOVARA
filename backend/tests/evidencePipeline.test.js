@@ -386,7 +386,7 @@ test("18. Successful registration preparation produces complete payload for smar
   const { agent, accountId } = await createAuthenticatedAgent("alice");
 
   // 1. Create and verify two evidence uploads
-  const file1Bytes = Buffer.from("Primary Clinical Trial Report", "utf8");
+  const file1Bytes = Buffer.from("%PDF-1.4: Primary Clinical Trial Report", "utf8");
   const file1Hash = crypto.createHash("sha256").update(file1Bytes).digest("hex").toLowerCase();
   const up1 = await agent.post("/api/v1/discoveries/evidence/uploads").send({
     filename: "clinical_trial.pdf",

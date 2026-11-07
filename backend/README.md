@@ -259,7 +259,7 @@ Requests a short-lived presigned PUT URL for browser-to-R2 raw evidence upload. 
 {
   "filename": "clinical_trial_report.pdf",
   "contentType": "application/pdf",
-  "fileSize": 2048000,
+  "fileSize": 81,
   "classification": "TECHNICAL_DOCUMENTATION"
 }
 ```
@@ -278,7 +278,7 @@ Requests a short-lived presigned PUT URL for browser-to-R2 raw evidence upload. 
 ```
 
 ### 4.7 `POST /api/v1/discoveries/evidence/uploads/:uploadId/complete`
-Independently verifies the uploaded object in R2, calculates streaming SHA-256 over raw bytes, and moves the object into an immutable evidence key. Idempotent. Requires upload owner session.
+Independently verifies the uploaded object in R2, calculates streaming SHA-256 over raw bytes, inspects file signatures (magic bytes), and moves the object into an immutable evidence key with TOCTOU integrity validation. Idempotent. Requires upload owner session.
 
 **Response (200 OK):**
 ```json
@@ -286,8 +286,8 @@ Independently verifies the uploaded object in R2, calculates streaming SHA-256 o
   "success": true,
   "upload": {
     "uploadId": "3b2f9a1e-...",
-    "sha256Digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "actualSize": 2048000,
+    "sha256Digest": "e2d2af03b821ed7893fe0edf1510ea9a3cc2aa7621da06d304ca4e5da253f029",
+    "actualSize": 81,
     "verifiedContentType": "application/pdf",
     "status": "VERIFIED",
     "verifiedAt": "2026-11-07T23:00:00.000Z"

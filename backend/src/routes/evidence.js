@@ -19,6 +19,7 @@ import {
   isValidNearAccountId,
   buildCanonicalEvidenceManifest,
   buildPublicMetadataDescriptor,
+  detectVerifiedContentType,
 } from "../services/manifestBuilder.js";
 
 const router = Router();
@@ -216,55 +217,128 @@ router.post("/evidence/uploads/:uploadId/complete", requireAuth, async (req, res
       });
     }
 
-    // 2. Stream object bytes and compute SHA-256 digest without buffering full file into memory
-    const stream = await getObjectStream(config.R2_EVIDENCE_BUCKET, upload.r2_object_key);
-    const { sha256Hex, totalBytes } = await calculateStreamSha256(stream);
+    // Step 1: Retrieve and hash the uploaded temporary object, capturing header bytes for signature verification
+    const tempStream = await getObjectStream(config.R2_EVIDENCE_BUCKET, upload.r2_object_key);
+    const { sha256Hex: tempSha256Hex, totalBytes: tempTotalBytes, headerBuffer } = await calculateStreamSha256(tempStream);
 
-    if (totalBytes !== headMeta.contentLength) {
+    if (tempTotalBytes !== headMeta.contentLength) {
       return res.status(400).json({
         error: "Streamed byte count did not match object length. File transfer was incomplete.",
         code: "ERR_TRUNCATED_UPLOAD",
       });
     }
 
-    // 3. Finalization into immutable location in R2
-    // Prevents reuse or overwriting of the pending upload key
-    const immutableKey = `evidence/${ownerAccountId}/${sha256Hex}/${upload.original_filename}`;
+    // Audit 2: Validate magic bytes and prevent content-type spoofing
+    let verifiedContentType;
+    try {
+      verifiedContentType = detectVerifiedContentType(headerBuffer, upload.declared_content_type);
+    } catch (typeErr) {
+      return res.status(400).json({
+        error: typeErr.message,
+        code: typeErr.code || "ERR_CONTENT_TYPE_SPOOFED",
+      });
+    }
+
+    // Step 2: Copy temporary object to unique final immutable evidence object key
+    // The final key is immutable and cannot be overwritten via the client's temporary presigned PUT URL
+    const finalKey = `evidence/${ownerAccountId}/${tempSha256Hex}/${upload.original_filename}`;
     const pendingKey = upload.r2_object_key;
 
-    // Copy to immutable target key
     await copyObject(
       config.R2_EVIDENCE_BUCKET,
       pendingKey,
       config.R2_EVIDENCE_BUCKET,
-      immutableKey
+      finalKey
     );
 
-    // Verify copied object exists
-    await headObject(config.R2_EVIDENCE_BUCKET, immutableKey);
+    // Step 3: Retrieve finalized destination object
+    let destMeta;
+    try {
+      destMeta = await headObject(config.R2_EVIDENCE_BUCKET, finalKey);
+    } catch (destHeadErr) {
+      return res.status(500).json({
+        error: "Failed to locate finalized evidence object after copy",
+        code: "ERR_FINALIZATION_COPY_FAILED",
+      });
+    }
 
-    // Clean up temporary pending upload object
-    await deleteObject(config.R2_EVIDENCE_BUCKET, pendingKey);
+    // Step 4: Stream destination object's actual contents through SHA-256
+    const destStream = await getObjectStream(config.R2_EVIDENCE_BUCKET, finalKey);
+    const { sha256Hex: destSha256Hex, totalBytes: destTotalBytes } = await calculateStreamSha256(destStream);
 
-    // 4. Update database record to VERIFIED
-    upload.status = "VERIFIED";
-    upload.sha256_digest = sha256Hex;
-    upload.actual_size = totalBytes;
-    upload.verified_content_type = headMeta.contentType || upload.declared_content_type;
-    upload.r2_object_key = immutableKey;
-    upload.verified_at = new Date();
+    // Step 5 & 6: Compare destination digest with original verified digest and confirm size
+    if (
+      destSha256Hex !== tempSha256Hex ||
+      destTotalBytes !== tempTotalBytes ||
+      destTotalBytes !== upload.expected_size ||
+      destMeta.contentLength !== destTotalBytes
+    ) {
+      // TOCTOU defense: Clean up the compromised destination object immediately
+      await deleteObject(config.R2_EVIDENCE_BUCKET, finalKey).catch(() => {});
+      return res.status(400).json({
+        error: "Finalized evidence digest or size does not match verified digest. Mid-flight file mutation detected.",
+        code: "ERR_EVIDENCE_INTEGRITY_MISMATCH",
+        details: {
+          expectedSha256: tempSha256Hex,
+          actualSha256: destSha256Hex,
+          expectedBytes: tempTotalBytes,
+          actualBytes: destTotalBytes,
+        },
+      });
+    }
 
-    await upload.save();
+    // Step 7: Only then mark EvidenceUpload as VERIFIED atomically
+    const updatedUpload = await EvidenceUpload.findOneAndUpdate(
+      { upload_id: uploadId, status: "PENDING_UPLOAD" },
+      {
+        $set: {
+          status: "VERIFIED",
+          sha256_digest: destSha256Hex,
+          actual_size: destTotalBytes,
+          verified_content_type: verifiedContentType,
+          r2_object_key: finalKey,
+          verified_at: new Date(),
+        },
+      },
+      { new: true }
+    );
+
+    if (!updatedUpload) {
+      // Check if concurrent request completed it
+      const current = await EvidenceUpload.findOne({ upload_id: uploadId });
+      if (current && (current.status === "VERIFIED" || current.status === "ATTACHED")) {
+        return res.status(200).json({
+          success: true,
+          upload: {
+            uploadId: current.upload_id,
+            sha256Digest: current.sha256_digest,
+            actualSize: current.actual_size,
+            verifiedContentType: current.verified_content_type,
+            status: current.status,
+            verifiedAt: current.verified_at,
+          },
+        });
+      }
+      return res.status(409).json({
+        error: "Upload record was concurrently modified",
+        code: "ERR_CONCURRENT_MODIFICATION",
+      });
+    }
+
+    // Step 8: Delete the temporary pending object after successful finalization
+    await deleteObject(config.R2_EVIDENCE_BUCKET, pendingKey).catch((delErr) => {
+      console.warn(`[WARN] Non-fatal: temporary object cleanup failed for '${pendingKey}':`, delErr.message);
+    });
 
     return res.status(200).json({
       success: true,
       upload: {
-        uploadId: upload.upload_id,
-        sha256Digest: upload.sha256_digest,
-        actualSize: upload.actual_size,
-        verifiedContentType: upload.verified_content_type,
-        status: upload.status,
-        verifiedAt: upload.verified_at,
+        uploadId: updatedUpload.upload_id,
+        sha256Digest: updatedUpload.sha256_digest,
+        actualSize: updatedUpload.actual_size,
+        verifiedContentType: updatedUpload.verified_content_type,
+        status: updatedUpload.status,
+        verifiedAt: updatedUpload.verified_at,
       },
     });
   } catch (err) {

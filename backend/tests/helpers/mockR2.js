@@ -9,6 +9,7 @@ class InMemoryR2Storage {
 
   clear() {
     this.objects.clear();
+    this.onBeforeCopy = null;
   }
 
   _makeKey(bucket, key) {
@@ -70,6 +71,10 @@ class InMemoryR2Storage {
     let actualSourceKey = sourceKey;
     if (actualSourceKey.startsWith(`${sourceBucket}/`)) {
       actualSourceKey = decodeURIComponent(actualSourceKey.replace(`${sourceBucket}/`, ""));
+    }
+
+    if (typeof this.onBeforeCopy === "function") {
+      this.onBeforeCopy(sourceBucket, actualSourceKey, targetBucket, targetKey);
     }
 
     const sourceItem = this.head(sourceBucket, actualSourceKey);

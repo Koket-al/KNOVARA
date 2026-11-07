@@ -31,8 +31,59 @@ export const config = {
   R2_ENDPOINT_URL: process.env.R2_ENDPOINT_URL || (process.env.CLOUDFLARE_ACCOUNT_ID ? `https://${process.env.CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com` : "https://mock.r2.cloudflarestorage.com"),
   R2_UPLOAD_URL_TTL_SECONDS: parseInt(process.env.R2_UPLOAD_URL_TTL_SECONDS || "900", 10), // 15 minutes
   MAX_EVIDENCE_FILE_BYTES: parseInt(process.env.MAX_EVIDENCE_FILE_BYTES || "104857600", 10), // 100 MB
-  PUBLIC_API_BASE_URL: process.env.PUBLIC_API_BASE_URL || `http://localhost:${process.env.PORT || "5000"}`,
+  PUBLIC_API_BASE_URL: process.env.PUBLIC_API_BASE_URL
+    ? process.env.PUBLIC_API_BASE_URL.replace(/\/$/, "")
+    : `http://localhost:${process.env.PORT || "5000"}`,
 };
+
+/**
+ * Validates the public metadata API base URL.
+ * In production: strictly enforces HTTPS, rejects localhost, loopback, and private networks.
+ * In development/test: allows localhost HTTP.
+ *
+ * @param {string} url
+ * @param {string} [nodeEnv]
+ * @returns {string} - Validated origin string
+ */
+export function validatePublicApiBaseUrl(url, nodeEnv = config.NODE_ENV) {
+  if (!url || typeof url !== "string" || !url.trim()) {
+    if (nodeEnv === "production") {
+      throw new Error("ERR_CONFIG: PUBLIC_API_BASE_URL is required in production");
+    }
+    return "http://localhost:5000";
+  }
+
+  let parsed;
+  try {
+    parsed = new URL(url.trim());
+  } catch (_e) {
+    throw new Error(`ERR_CONFIG: PUBLIC_API_BASE_URL '${url}' is not a valid absolute URL`);
+  }
+
+  if (nodeEnv === "production") {
+    if (parsed.protocol !== "https:") {
+      throw new Error(`ERR_CONFIG: PUBLIC_API_BASE_URL must use HTTPS protocol in production (received '${parsed.protocol}')`);
+    }
+
+    const host = parsed.hostname.toLowerCase().replace(/^\[|\]$/g, "");
+    if (
+      host === "localhost" ||
+      host === "127.0.0.1" ||
+      host === "::1" ||
+      host === "0.0.0.0" ||
+      host.startsWith("10.") ||
+      /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(host) ||
+      host.startsWith("192.168.") ||
+      host.startsWith("169.254.") ||
+      host.endsWith(".local") ||
+      host.endsWith(".internal")
+    ) {
+      throw new Error(`ERR_CONFIG: PUBLIC_API_BASE_URL '${url}' points to localhost or private network, forbidden in production`);
+    }
+  }
+
+  return parsed.origin;
+}
 
 // Validate critical production configurations
 if (config.NODE_ENV === "production") {
@@ -45,5 +96,6 @@ if (config.NODE_ENV === "production") {
   if (!process.env.CLOUDFLARE_ACCOUNT_ID || !process.env.R2_ACCESS_KEY_ID || !process.env.R2_SECRET_ACCESS_KEY) {
     throw new Error("ERR_CONFIG: Cloudflare R2 credentials (CLOUDFLARE_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY) are required in production");
   }
+  validatePublicApiBaseUrl(config.PUBLIC_API_BASE_URL, "production");
 }
 

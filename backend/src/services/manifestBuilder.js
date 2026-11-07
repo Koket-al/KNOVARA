@@ -241,3 +241,152 @@ export function buildPublicMetadataDescriptor({
     reference,
   };
 }
+
+/**
+ * Inspects raw file header bytes (magic bytes / file signatures) to determine
+ * the actual content type and verify it against the client-declared content type.
+ *
+ * Supported verified signatures:
+ * - PDF: Starts with `%PDF-` (0x25, 0x50, 0x44, 0x46, 0x2D)
+ * - PNG: Starts with `\x89PNG\r\n\x1a\n` (0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A)
+ * - JPEG: Starts with `\xFF\xD8\xFF` (0xFF, 0xD8, 0xFF)
+ * - ZIP: Starts with `PK\x03\x04` (0x50, 0x4B, 0x03, 0x04)
+ * - JSON: Starts with `{` or `[` (ignoring leading whitespace and BOM), valid UTF-8, no binary null bytes
+ * - Text/CSV: Valid UTF-8 / printable ASCII without binary null bytes (0x00)
+ *
+ * Security & Integrity Invariants:
+ * - Rejects spoofed content types with code `ERR_CONTENT_TYPE_SPOOFED` when declared type
+ *   contradicts the file signature.
+ * - Preserves distinction between declared type, verified type, and "application/octet-stream"
+ *   for unrecognized binary formats.
+ * - Performs structural file signature verification only; makes ZERO claims of antivirus,
+ *   malware scanning, or executable sandboxing.
+ *
+ * @param {Buffer} headerBuffer - Leading raw bytes from object stream (e.g. up to 512 bytes)
+ * @param {string} declaredContentType - Client-declared MIME type
+ * @returns {string} - Verified canonical MIME type
+ */
+export function detectVerifiedContentType(headerBuffer, declaredContentType) {
+  const declared = (declaredContentType || "").trim().toLowerCase();
+  const buf = Buffer.isBuffer(headerBuffer) ? headerBuffer : Buffer.from(headerBuffer || []);
+
+  if (buf.length === 0) {
+    const err = new Error("ERR_EMPTY_EVIDENCE_FILE: Evidence file has 0 bytes");
+    err.code = "ERR_EMPTY_EVIDENCE_FILE";
+    throw err;
+  }
+
+  // 1. Signature checks
+  const isPdf = buf.length >= 5 && buf.subarray(0, 5).toString("latin1") === "%PDF-";
+  const isPng =
+    buf.length >= 8 &&
+    buf[0] === 0x89 &&
+    buf[1] === 0x50 &&
+    buf[2] === 0x4e &&
+    buf[3] === 0x47 &&
+    buf[4] === 0x0d &&
+    buf[5] === 0x0a &&
+    buf[6] === 0x1a &&
+    buf[7] === 0x0a;
+  const isJpeg = buf.length >= 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff;
+  const isZip = buf.length >= 4 && buf[0] === 0x50 && buf[1] === 0x4b && buf[2] === 0x03 && buf[3] === 0x04;
+
+  let hasNullByte = false;
+  for (let i = 0; i < buf.length; i++) {
+    if (buf[i] === 0x00) {
+      hasNullByte = true;
+      break;
+    }
+  }
+
+  // Check JSON
+  let isJson = false;
+  if (!hasNullByte && !isPdf && !isPng && !isJpeg && !isZip) {
+    let startIdx = 0;
+    // Strip UTF-8 BOM if present
+    if (buf.length >= 3 && buf[0] === 0xef && buf[1] === 0xbb && buf[2] === 0xbf) {
+      startIdx = 3;
+    }
+    while (startIdx < buf.length && (buf[startIdx] === 0x20 || buf[startIdx] === 0x09 || buf[startIdx] === 0x0a || buf[startIdx] === 0x0d)) {
+      startIdx++;
+    }
+    if (startIdx < buf.length && (buf[startIdx] === 0x7b || buf[startIdx] === 0x5b)) { // '{' or '['
+      try {
+        const textSlice = buf.subarray(startIdx).toString("utf8");
+        if (!textSlice.includes("\ufffd")) {
+          isJson = true;
+        }
+      } catch (_e) {
+        isJson = false;
+      }
+    }
+  }
+
+  // Check Text/CSV
+  let isText = false;
+  if (!hasNullByte && !isPdf && !isPng && !isJpeg && !isZip) {
+    try {
+      const text = buf.toString("utf8");
+      if (!text.includes("\ufffd")) {
+        isText = true;
+      }
+    } catch (_e) {
+      isText = false;
+    }
+  }
+
+  // Determine detected type
+  let detectedType;
+  if (isPdf) detectedType = "application/pdf";
+  else if (isPng) detectedType = "image/png";
+  else if (isJpeg) detectedType = "image/jpeg";
+  else if (isZip) detectedType = "application/zip";
+  else if (isJson) detectedType = "application/json";
+  else if (isText) detectedType = (declared === "text/csv" ? "text/csv" : "text/plain");
+  else detectedType = "application/octet-stream";
+
+  // 2. Strict spoofing prevention: if declared is specific, it MUST match the file signature
+  if (declared === "application/pdf" && !isPdf) {
+    const err = new Error(`Declared content-type 'application/pdf' contradicts verified file signature (detected '${detectedType}')`);
+    err.code = "ERR_CONTENT_TYPE_SPOOFED";
+    throw err;
+  }
+
+  if (declared === "image/png" && !isPng) {
+    const err = new Error(`Declared content-type 'image/png' contradicts verified file signature (detected '${detectedType}')`);
+    err.code = "ERR_CONTENT_TYPE_SPOOFED";
+    throw err;
+  }
+
+  if ((declared === "image/jpeg" || declared === "image/jpg") && !isJpeg) {
+    const err = new Error(`Declared content-type '${declared}' contradicts verified file signature (detected '${detectedType}')`);
+    err.code = "ERR_CONTENT_TYPE_SPOOFED";
+    throw err;
+  }
+
+  if ((declared === "application/zip" || declared === "application/x-zip-compressed") && !isZip) {
+    const err = new Error(`Declared content-type '${declared}' contradicts verified file signature (detected '${detectedType}')`);
+    err.code = "ERR_CONTENT_TYPE_SPOOFED";
+    throw err;
+  }
+
+  if (declared === "application/json" && !isJson) {
+    const err = new Error(`Declared content-type 'application/json' contradicts verified file signature (detected '${detectedType}')`);
+    err.code = "ERR_CONTENT_TYPE_SPOOFED";
+    throw err;
+  }
+
+  if ((declared === "text/plain" || declared === "text/csv") && (hasNullByte || !isText)) {
+    const err = new Error(`Declared content-type '${declared}' contradicts verified file signature (detected binary data or null bytes)`);
+    err.code = "ERR_CONTENT_TYPE_SPOOFED";
+    throw err;
+  }
+
+  // If a known signature was detected, return the detected type
+  if (detectedType !== "application/octet-stream") {
+    return detectedType;
+  }
+
+  // Unrecognized binary: preserve distinction
+  return "application/octet-stream";
+}

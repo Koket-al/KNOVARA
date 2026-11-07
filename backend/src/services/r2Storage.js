@@ -183,27 +183,42 @@ export async function deleteObject(bucket = config.R2_EVIDENCE_BUCKET, key) {
 
 /**
  * Streams raw object bytes incrementally into SHA-256 without buffering the entire
- * file into memory. Measures actual streamed byte count.
+ * file into memory. Measures actual streamed byte count and captures leading bytes
+ * for magic-byte file signature validation.
  *
  * @param {stream.Readable} readableStream
- * @returns {Promise<{ sha256Hex: string, totalBytes: number }>}
+ * @param {number} [maxHeaderBytes=512] - Number of leading bytes to capture for signature inspection
+ * @returns {Promise<{ sha256Hex: string, totalBytes: number, headerBuffer: Buffer }>}
  */
-export async function calculateStreamSha256(readableStream) {
+export async function calculateStreamSha256(readableStream, maxHeaderBytes = 512) {
   return new Promise((resolve, reject) => {
     const hash = crypto.createHash("sha256");
     let totalBytes = 0;
+    const headerChunks = [];
+    let headerBytesCount = 0;
+
+    const recordHeaderChunk = (chunk) => {
+      if (headerBytesCount < maxHeaderBytes) {
+        const needed = maxHeaderBytes - headerBytesCount;
+        const slice = chunk.subarray(0, needed);
+        headerChunks.push(slice);
+        headerBytesCount += slice.length;
+      }
+    };
 
     // Handle standard Node.js readable stream
     if (typeof readableStream.on === "function") {
       readableStream.on("data", (chunk) => {
         totalBytes += chunk.length;
         hash.update(chunk);
+        recordHeaderChunk(chunk);
       });
 
       readableStream.on("end", () => {
         resolve({
           sha256Hex: hash.digest("hex").toLowerCase(),
           totalBytes,
+          headerBuffer: Buffer.concat(headerChunks),
         });
       });
 
@@ -224,6 +239,7 @@ export async function calculateStreamSha256(readableStream) {
               resolve({
                 sha256Hex: hash.digest("hex").toLowerCase(),
                 totalBytes,
+                headerBuffer: Buffer.concat(headerChunks),
               });
               return;
             }
@@ -231,6 +247,7 @@ export async function calculateStreamSha256(readableStream) {
               const bufferChunk = Buffer.isBuffer(value) ? value : Buffer.from(value);
               totalBytes += bufferChunk.length;
               hash.update(bufferChunk);
+              recordHeaderChunk(bufferChunk);
             }
             readChunk();
           })
