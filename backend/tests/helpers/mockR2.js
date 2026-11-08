@@ -99,6 +99,9 @@ export function createMockS3Client() {
     getPresignedUrl: async ({ bucket, key, contentType, expiresIn }) => {
       return `https://mock-cf-account.r2.cloudflarestorage.com/${bucket}/${encodeURIComponent(key)}?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Expires=${expiresIn}&X-Amz-SignedHeaders=content-type`;
     },
+    getPresignedDownloadUrl: async ({ bucket, key, filename, expiresIn }) => {
+      return `https://mock-cf-account.r2.cloudflarestorage.com/${bucket}/${encodeURIComponent(key)}?download=1&filename=${encodeURIComponent(filename || "")}&expires=${expiresIn}`;
+    },
     send: async (command) => {
       const name = command.constructor.name;
       const input = command.input;

@@ -1,6 +1,11 @@
 import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
 
+// Load .env from process.cwd() first, then fallback to backend/.env relative to this config file
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 
 export const config = {
   PORT: parseInt(process.env.PORT || "5000", 10),

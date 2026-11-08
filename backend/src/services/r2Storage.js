@@ -77,6 +77,40 @@ export async function generatePresignedUploadUrl({
 }
 
 /**
+ * Generates a short-lived presigned GET URL for downloading authorized evidence files from R2.
+ * Enforces Content-Disposition header for direct browser download.
+ *
+ * @param {object} params
+ * @param {string} params.bucket - Target bucket name
+ * @param {string} params.key - R2 object key
+ * @param {string} [params.filename] - Original filename for Content-Disposition attachment
+ * @param {number} [params.expiresIn=900] - URL validity in seconds (default: 15 minutes)
+ * @returns {Promise<string>}
+ */
+export async function generatePresignedDownloadUrl({
+  bucket = config.R2_EVIDENCE_BUCKET,
+  key,
+  filename,
+  expiresIn = 900,
+}) {
+  const client = getS3Client();
+
+  if (typeof client.getPresignedDownloadUrl === "function") {
+    return client.getPresignedDownloadUrl({ bucket, key, filename, expiresIn });
+  }
+
+  const command = new GetObjectCommand({
+    Bucket: bucket,
+    Key: key,
+    ResponseContentDisposition: filename
+      ? `attachment; filename="${encodeURIComponent(filename)}"`
+      : "attachment",
+  });
+
+  return getSignedUrl(client, command, { expiresIn });
+}
+
+/**
  * Retrieves metadata for an object in R2.
  *
  * @param {string} bucket
