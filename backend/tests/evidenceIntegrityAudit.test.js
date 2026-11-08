@@ -141,6 +141,39 @@ test("Audit 1.2: Immutable destination key path separation from temporary pendin
   }, /NotFound/);
 });
 
+test("Audit 1.3: Concurrent completion requests - safely resolves without duplicate processing or race condition", async () => {
+  const { agent, accountId } = await createAuthenticatedAgent("alice");
+
+  const pdfBytes = Buffer.from("%PDF-1.4: Concurrent Completion Race Test Document", "utf8");
+
+  const createRes = await agent.post("/api/v1/discoveries/evidence/uploads").send({
+    filename: "concurrent_spec.pdf",
+    contentType: "application/pdf",
+    fileSize: pdfBytes.length,
+  });
+  const { uploadId, r2Key } = createRes.body;
+
+  r2Store.put(config.R2_EVIDENCE_BUCKET, r2Key, pdfBytes, "application/pdf");
+
+  // Fire two concurrent completion requests simultaneously
+  const [res1, res2] = await Promise.all([
+    agent.post(`/api/v1/discoveries/evidence/uploads/${uploadId}/complete`).send({}),
+    agent.post(`/api/v1/discoveries/evidence/uploads/${uploadId}/complete`).send({}),
+  ]);
+
+  // Both should return 200 OK (one transitions, the other safely returns the idempotent verified record)
+  assert.equal(res1.status, 200);
+  assert.equal(res2.status, 200);
+  assert.equal(res1.body.upload.status, "VERIFIED");
+  assert.equal(res2.body.upload.status, "VERIFIED");
+  assert.equal(res1.body.upload.sha256Digest, res2.body.upload.sha256Digest);
+
+  // Database must show exactly one VERIFIED record
+  const uploadDoc = await EvidenceUpload.findOne({ upload_id: uploadId });
+  assert.equal(uploadDoc.status, "VERIFIED");
+  assert.equal(uploadDoc.sha256_digest, res1.body.upload.sha256Digest);
+});
+
 // =========================================================================
 // AUDIT 2: ACTUAL CONTENT-TYPE (MAGIC BYTES) & SPOOFING REJECTION
 // =========================================================================
@@ -234,6 +267,33 @@ test("Audit 2.4: Successfully verifies all supported file signatures and sets ve
   // Test Unrecognized binary fallback to application/octet-stream
   const arbitraryBinary = Buffer.from([0x01, 0x02, 0x03, 0x04, 0x00, 0xff, 0xfe]);
   assert.equal(detectVerifiedContentType(arbitraryBinary, "application/octet-stream"), "application/octet-stream");
+});
+
+test("Audit 2.5: Preserves separate declared_content_type and verified_content_type for unrecognized formats", async () => {
+  const { agent } = await createAuthenticatedAgent("alice");
+
+  // Arbitrary proprietary binary dataset (unrecognized format)
+  const binaryData = Buffer.from([0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77]);
+
+  const createRes = await agent.post("/api/v1/discoveries/evidence/uploads").send({
+    filename: "crystallography.raw",
+    contentType: "chemical/x-cif", // Unrecognized declared format
+    fileSize: binaryData.length,
+    classification: "FULL_DATASET",
+  });
+  const { uploadId, r2Key } = createRes.body;
+
+  r2Store.put(config.R2_EVIDENCE_BUCKET, r2Key, binaryData, "chemical/x-cif");
+
+  const completeRes = await agent.post(`/api/v1/discoveries/evidence/uploads/${uploadId}/complete`).send({});
+  assert.equal(completeRes.status, 200);
+
+  // Database record must preserve declared_content_type as 'chemical/x-cif'
+  // while verified_content_type is explicitly 'application/octet-stream' (no false verification claimed)
+  const uploadDoc = await EvidenceUpload.findOne({ upload_id: uploadId });
+  assert.equal(uploadDoc.declared_content_type, "chemical/x-cif");
+  assert.equal(uploadDoc.verified_content_type, "application/octet-stream");
+  assert.equal(uploadDoc.status, "VERIFIED");
 });
 
 // =========================================================================
