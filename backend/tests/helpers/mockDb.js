@@ -4,6 +4,91 @@ import { AuthChallenge } from "../../src/models/AuthChallenge.js";
 import { EvidenceUpload } from "../../src/models/EvidenceUpload.js";
 import { EvidenceManifest } from "../../src/models/EvidenceManifest.js";
 import { PublicMetadataDescriptor } from "../../src/models/PublicMetadataDescriptor.js";
+import { DiscoveryProjection } from "../../src/models/DiscoveryProjection.js";
+import { LicenseOfferProjection } from "../../src/models/LicenseOfferProjection.js";
+import { LicenseRequestProjection } from "../../src/models/LicenseRequestProjection.js";
+import { ChainTransaction } from "../../src/models/ChainTransaction.js";
+import { AccountRoyaltyProjection } from "../../src/models/AccountRoyaltyProjection.js";
+
+function getNestedValue(obj, path) {
+  if (!obj || !path) return undefined;
+  if (path in obj) return obj[path];
+  const parts = path.split(".");
+  let cur = obj;
+  for (const p of parts) {
+    if (cur === null || cur === undefined) return undefined;
+    cur = cur[p];
+  }
+  return cur;
+}
+
+class MockQuery {
+  constructor(executor) {
+    this._executor = executor;
+    this._sort = null;
+    this._skip = 0;
+    this._limit = null;
+    this._select = null;
+  }
+
+  sort(sortObj) {
+    this._sort = sortObj;
+    return this;
+  }
+
+  skip(n) {
+    this._skip = n;
+    return this;
+  }
+
+  limit(n) {
+    this._limit = n;
+    return this;
+  }
+
+  select(fields) {
+    this._select = fields;
+    return this;
+  }
+
+  lean() {
+    return this;
+  }
+
+  async exec() {
+    let results = await this._executor();
+    if (!Array.isArray(results)) {
+      return results;
+    }
+    if (this._sort) {
+      const [field, direction] = Object.entries(this._sort)[0];
+      results.sort((a, b) => {
+        const valA = getNestedValue(a, field);
+        const valB = getNestedValue(b, field);
+        if (valA === valB) return 0;
+        if (valA === undefined || valA === null) return 1;
+        if (valB === undefined || valB === null) return -1;
+        if (valA > valB) return direction === -1 ? -1 : 1;
+        return direction === -1 ? 1 : -1;
+      });
+    }
+    if (this._skip > 0) {
+      results = results.slice(this._skip);
+    }
+    if (this._limit !== null && this._limit !== undefined) {
+      results = results.slice(0, this._limit);
+    }
+    return results;
+  }
+
+  then(resolve, reject) {
+    return this.exec().then(resolve, reject);
+  }
+
+  catch(reject) {
+    return this.exec().catch(reject);
+  }
+}
 
 class InMemoryCollection {
   constructor(name) {
@@ -15,45 +100,71 @@ class InMemoryCollection {
     this.docs.clear();
   }
 
-  insert(doc) {
-    const key =
+  _getKey(doc) {
+    return (
+      doc.request_id ||
+      doc.transaction_hash ||
       doc.upload_id ||
       doc.manifest_id ||
       (doc.discovery_id ? `${doc.discovery_id}_${doc.version || "1.0.0"}` : null) ||
+      doc.offer_id ||
       doc.nonce ||
       doc.account_id ||
-      String(Math.random());
-    this.docs.set(key, { ...doc });
-    return this.docs.get(key);
+      doc._id ||
+      String(Math.random())
+    );
+  }
+
+  insert(doc) {
+    const key = this._getKey(doc);
+    const item = { ...doc };
+    this.docs.set(key, item);
+    return item;
   }
 
   find(query = {}) {
-    const results = [];
-    for (const [key, doc] of this.docs.entries()) {
-      if (this._matches(doc, query)) {
-        const item = { ...doc };
-        item.save = async () => {
-          this.docs.set(key, { ...item });
-          return item;
-        };
-        results.push(item);
+    const executor = async () => {
+      const results = [];
+      for (const [key, doc] of this.docs.entries()) {
+        if (this._matches(doc, query)) {
+          const item = { ...doc };
+          item.save = async () => {
+            this.docs.set(key, { ...item });
+            return item;
+          };
+          results.push(item);
+        }
       }
-    }
-    return results;
+      return results;
+    };
+    return new MockQuery(executor);
   }
 
   findOne(query = {}) {
-    for (const [key, doc] of this.docs.entries()) {
-      if (this._matches(doc, query)) {
-        const item = { ...doc };
-        item.save = async () => {
-          this.docs.set(key, { ...item });
+    const executor = async () => {
+      for (const [key, doc] of this.docs.entries()) {
+        if (this._matches(doc, query)) {
+          const item = { ...doc };
+          item.save = async () => {
+            this.docs.set(key, { ...item });
+            return item;
+          };
           return item;
-        };
-        return item;
+        }
+      }
+      return null;
+    };
+    return new MockQuery(executor);
+  }
+
+  countDocuments(query = {}) {
+    let count = 0;
+    for (const doc of this.docs.values()) {
+      if (this._matches(doc, query)) {
+        count++;
       }
     }
-    return null;
+    return Promise.resolve(count);
   }
 
   findOneAndDelete(query = {}) {
@@ -96,47 +207,77 @@ class InMemoryCollection {
       if (update.$set) {
         Object.assign(existingDoc, update.$set);
       }
-      return { ...existingDoc };
+      if (update.$inc) {
+        for (const [k, incVal] of Object.entries(update.$inc)) {
+          existingDoc[k] = (existingDoc[k] || 0) + incVal;
+        }
+      }
+      this.docs.set(existingKey, { ...existingDoc });
+      return Promise.resolve({ ...existingDoc });
     }
 
     if (options.upsert) {
-      const newDoc = {};
-      if (filter.account_id) newDoc.account_id = filter.account_id;
-      if (filter.nonce) newDoc.nonce = filter.nonce;
-      if (filter.upload_id) newDoc.upload_id = filter.upload_id;
-      if (filter.discovery_id) newDoc.discovery_id = filter.discovery_id;
-      if (filter.version) newDoc.version = filter.version;
+      const newDoc = { ...filter };
       if (update.$setOnInsert) Object.assign(newDoc, update.$setOnInsert);
       if (update.$set) Object.assign(newDoc, update.$set);
-      const key =
-        newDoc.upload_id ||
-        newDoc.manifest_id ||
-        (newDoc.discovery_id ? `${newDoc.discovery_id}_${newDoc.version || "1.0.0"}` : null) ||
-        newDoc.nonce ||
-        newDoc.account_id ||
-        String(Math.random());
+      const key = this._getKey(newDoc);
       this.docs.set(key, newDoc);
-      return { ...newDoc };
+      return Promise.resolve({ ...newDoc });
     }
 
-    return null;
+    return Promise.resolve(null);
   }
 
   _matches(doc, query) {
+    if (!query || Object.keys(query).length === 0) return true;
     for (const [k, v] of Object.entries(query)) {
+      if (k === "$or") {
+        if (!Array.isArray(v) || v.length === 0) return false;
+        const anyMatch = v.some((subQuery) => this._matches(doc, subQuery));
+        if (!anyMatch) return false;
+        continue;
+      }
+
+      const docVal = getNestedValue(doc, k);
+
       if (v !== null && typeof v === "object") {
+        if (v instanceof RegExp) {
+          if (typeof docVal !== "string" || !v.test(docVal)) return false;
+          continue;
+        }
+        if ("$regex" in v) {
+          const re = new RegExp(v.$regex, v.$options || "");
+          if (typeof docVal !== "string" || !re.test(docVal)) return false;
+          continue;
+        }
         if ("$in" in v && Array.isArray(v.$in)) {
-          if (!v.$in.includes(doc[k])) return false;
+          if (!v.$in.includes(docVal)) return false;
           continue;
         }
         if ("$gt" in v) {
-          const docVal = doc[k] instanceof Date ? doc[k].getTime() : new Date(doc[k]).getTime();
-          const queryVal = v.$gt instanceof Date ? v.$gt.getTime() : new Date(v.$gt).getTime();
-          if (!(docVal > queryVal)) return false;
+          const d = docVal instanceof Date ? docVal.getTime() : new Date(docVal).getTime();
+          const q = v.$gt instanceof Date ? v.$gt.getTime() : new Date(v.$gt).getTime();
+          if (!(d > q)) return false;
+          continue;
+        }
+        if ("$gte" in v) {
+          if (!(docVal >= v.$gte)) return false;
+          continue;
+        }
+        if ("$lt" in v) {
+          if (!(docVal < v.$lt)) return false;
+          continue;
+        }
+        if ("$lte" in v) {
+          if (!(docVal <= v.$lte)) return false;
+          continue;
+        }
+        if ("$ne" in v) {
+          if (docVal === v.$ne) return false;
           continue;
         }
       }
-      if (doc[k] !== v) return false;
+      if (docVal !== v) return false;
     }
     return true;
   }
@@ -147,8 +288,46 @@ export const userStore = new InMemoryCollection("users");
 export const evidenceUploadStore = new InMemoryCollection("evidence_uploads");
 export const evidenceManifestStore = new InMemoryCollection("evidence_manifests");
 export const publicDescriptorStore = new InMemoryCollection("public_descriptors");
+export const discoveryProjectionStore = new InMemoryCollection("discovery_projections");
+export const licenseOfferProjectionStore = new InMemoryCollection("license_offer_projections");
+export const licenseRequestProjectionStore = new InMemoryCollection("license_request_projections");
+export const chainTransactionStore = new InMemoryCollection("chain_transactions");
+export const accountRoyaltyProjectionStore = new InMemoryCollection("account_royalty_projections");
 
 let isMockInstalled = false;
+
+function bindModelMethods(ModelClass, store) {
+  ModelClass.prototype.save = async function () {
+    const data = this.toObject ? this.toObject() : { ...this };
+    store.insert(data);
+    return this;
+  };
+  ModelClass.create = async function (data) {
+    return store.insert(data);
+  };
+  ModelClass.findOne = function (query) {
+    return store.findOne(query);
+  };
+  ModelClass.find = function (query) {
+    return store.find(query);
+  };
+  ModelClass.countDocuments = function (query) {
+    return store.countDocuments(query);
+  };
+  ModelClass.findOneAndUpdate = function (filter, update, options) {
+    return store.findOneAndUpdate(filter, update, options);
+  };
+  ModelClass.updateMany = function (filter, update) {
+    return store.updateMany(filter, update);
+  };
+  ModelClass.findOneAndDelete = function (query) {
+    return store.findOneAndDelete(query);
+  };
+  ModelClass.deleteMany = async function () {
+    store.clear();
+    return { acknowledged: true, deletedCount: 0 };
+  };
+}
 
 /**
  * Installs in-memory model intercepts for isolated fast testing.
@@ -157,102 +336,35 @@ export function setupMockDatabase() {
   process.env.NODE_ENV = "test";
   if (isMockInstalled) return;
 
-  // Intercept AuthChallenge save
-  const originalChallengeSave = AuthChallenge.prototype.save;
-  AuthChallenge.prototype.save = async function () {
-    const data = this.toObject();
-    challengeStore.insert(data);
-    return this;
-  };
+  // Intercept AuthChallenge
+  bindModelMethods(AuthChallenge, challengeStore);
 
-  // Intercept AuthChallenge findOneAndDelete
-  AuthChallenge.findOneAndDelete = async function (query) {
-    return challengeStore.findOneAndDelete(query);
-  };
-
-  // Intercept AuthChallenge findOne
-  AuthChallenge.findOne = async function (query) {
-    return challengeStore.findOne(query);
-  };
-
-  // Intercept AuthChallenge deleteMany
-  AuthChallenge.deleteMany = async function () {
-    challengeStore.clear();
-    return { acknowledged: true, deletedCount: 0 };
-  };
-
-  // Intercept User findOneAndUpdate
-  User.findOneAndUpdate = async function (filter, update, options) {
-    return userStore.findOneAndUpdate(filter, update, options);
-  };
-
-  // Intercept User findOne
-  User.findOne = async function (query) {
-    return userStore.findOne(query);
-  };
-
-  // Intercept User deleteMany
-  User.deleteMany = async function () {
-    userStore.clear();
-    return { acknowledged: true, deletedCount: 0 };
-  };
+  // Intercept User
+  bindModelMethods(User, userStore);
 
   // Intercept EvidenceUpload
-  EvidenceUpload.prototype.save = async function () {
-    const data = this.toObject();
-    evidenceUploadStore.insert(data);
-    return this;
-  };
-  EvidenceUpload.findOne = async function (query) {
-    return evidenceUploadStore.findOne(query);
-  };
-  EvidenceUpload.find = async function (query) {
-    return evidenceUploadStore.find(query);
-  };
-  EvidenceUpload.findOneAndUpdate = async function (filter, update, options) {
-    return evidenceUploadStore.findOneAndUpdate(filter, update, options);
-  };
-  EvidenceUpload.updateMany = async function (filter, update) {
-    return evidenceUploadStore.updateMany(filter, update);
-  };
-  EvidenceUpload.deleteMany = async function () {
-    evidenceUploadStore.clear();
-    return { acknowledged: true, deletedCount: 0 };
-  };
+  bindModelMethods(EvidenceUpload, evidenceUploadStore);
 
   // Intercept EvidenceManifest
-  EvidenceManifest.prototype.save = async function () {
-    const data = this.toObject();
-    evidenceManifestStore.insert(data);
-    return this;
-  };
-  EvidenceManifest.findOne = async function (query) {
-    return evidenceManifestStore.findOne(query);
-  };
-  EvidenceManifest.findOneAndUpdate = async function (filter, update, options) {
-    return evidenceManifestStore.findOneAndUpdate(filter, update, options);
-  };
-  EvidenceManifest.deleteMany = async function () {
-    evidenceManifestStore.clear();
-    return { acknowledged: true, deletedCount: 0 };
-  };
+  bindModelMethods(EvidenceManifest, evidenceManifestStore);
 
   // Intercept PublicMetadataDescriptor
-  PublicMetadataDescriptor.prototype.save = async function () {
-    const data = this.toObject();
-    publicDescriptorStore.insert(data);
-    return this;
-  };
-  PublicMetadataDescriptor.findOne = async function (query) {
-    return publicDescriptorStore.findOne(query);
-  };
-  PublicMetadataDescriptor.findOneAndUpdate = async function (filter, update, options) {
-    return publicDescriptorStore.findOneAndUpdate(filter, update, options);
-  };
-  PublicMetadataDescriptor.deleteMany = async function () {
-    publicDescriptorStore.clear();
-    return { acknowledged: true, deletedCount: 0 };
-  };
+  bindModelMethods(PublicMetadataDescriptor, publicDescriptorStore);
+
+  // Intercept DiscoveryProjection
+  bindModelMethods(DiscoveryProjection, discoveryProjectionStore);
+
+  // Intercept LicenseOfferProjection
+  bindModelMethods(LicenseOfferProjection, licenseOfferProjectionStore);
+
+  // Intercept LicenseRequestProjection
+  bindModelMethods(LicenseRequestProjection, licenseRequestProjectionStore);
+
+  // Intercept ChainTransaction
+  bindModelMethods(ChainTransaction, chainTransactionStore);
+
+  // Intercept AccountRoyaltyProjection
+  bindModelMethods(AccountRoyaltyProjection, accountRoyaltyProjectionStore);
 
   // Mock readyState property on connection
   Object.defineProperty(mongoose.connection, "readyState", {
@@ -272,4 +384,9 @@ export function clearMockDatabase() {
   evidenceUploadStore.clear();
   evidenceManifestStore.clear();
   publicDescriptorStore.clear();
+  discoveryProjectionStore.clear();
+  licenseOfferProjectionStore.clear();
+  licenseRequestProjectionStore.clear();
+  chainTransactionStore.clear();
+  accountRoyaltyProjectionStore.clear();
 }

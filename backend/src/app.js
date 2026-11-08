@@ -9,6 +9,10 @@ import healthRouter from "./routes/health.js";
 import authRouter from "./routes/auth.js";
 import evidenceRouter from "./routes/evidence.js";
 import metadataRouter from "./routes/metadata.js";
+import transactionsRouter from "./routes/transactions.js";
+import discoveriesRouter from "./routes/discoveries.js";
+import licensesRouter from "./routes/licenses.js";
+import accountRouter from "./routes/account.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 
 /**
@@ -95,6 +99,22 @@ export function createApp(options = {}) {
   // Evidence and Discovery Registration endpoints
   app.use("/api/discoveries", evidenceRouter);
   app.use("/api/v1/discoveries", evidenceRouter);
+
+  // Discovery browse and search endpoints
+  app.use("/api/discoveries", discoveriesRouter);
+  app.use("/api/v1/discoveries", discoveriesRouter);
+
+  // Transaction verification, reconciliation, and intent generation
+  app.use("/api/transactions", transactionsRouter);
+  app.use("/api/v1/transactions", transactionsRouter);
+
+  // Licensing offers and requests
+  app.use("/api/licenses", licensesRouter);
+  app.use("/api/v1/licenses", licensesRouter);
+
+  // Current authenticated account management and live royalties
+  app.use("/api/account", accountRouter);
+  app.use("/api/v1/account", accountRouter);
 
   // Public NEP-177 Metadata descriptor endpoints
   app.use("/api", metadataRouter);

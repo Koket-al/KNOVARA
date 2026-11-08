@@ -56,18 +56,21 @@ knovara/
 │   ├── src/                         # lib.rs, discovery.rs, nft.rs, licensing.rs, payments.rs, etc.
 │   ├── tests/                       # 27 NEAR Sandbox integration tests
 │   └── target/wasm32-unknown-unknown/release/knovara.wasm
-├── backend/                         # Express API, NEP-413 Auth & R2 Evidence Engine (Stages 4.2 – 4.3)
+├── backend/                         # Express API, NEP-413 Auth, R2 Evidence & Sync Engine (Stages 4.2 – 4.4)
 │   ├── package.json                 # Node.js 24 LTS, AWS SDK v3, json-canonicalize, borsh, tweetnacl
 │   ├── .env.example                 # Configuration template for Testnet, MongoDB Atlas & Cloudflare R2
 │   ├── src/
 │   │   ├── server.js                # Server entry point & graceful shutdown
 │   │   ├── app.js                   # Express application factory & middleware pipeline
 │   │   ├── config/                  # env.js, database.js
-│   │   ├── models/                  # User, AuthChallenge, EvidenceUpload, EvidenceManifest, PublicMetadataDescriptor
-│   │   ├── routes/                  # health.js, auth.js, evidence.js, metadata.js
-│   │   ├── services/                # authVerifier.js, nearRpc.js, r2Storage.js, manifestBuilder.js
+│   │   ├── models/                  # User, AuthChallenge, EvidenceUpload, EvidenceManifest, PublicMetadataDescriptor,
+│   │   │                            # DiscoveryProjection, LicenseOfferProjection, LicenseRequestProjection,
+│   │   │                            # ChainTransaction, AccountRoyaltyProjection
+│   │   ├── routes/                  # health.js, auth.js, evidence.js, metadata.js, transactions.js, discoveries.js, licenses.js, account.js
+│   │   ├── services/                # authVerifier.js, nearRpc.js, r2Storage.js, manifestBuilder.js,
+│   │   │                            # nearContract.js, eventParser.js, syncService.js, transactionVerifier.js, transactionIntent.js
 │   │   └── middleware/              # auth.js (requireAuth), rateLimiter.js, errorHandler.js
-│   └── tests/                       # 72 automated unit & integration tests
+│   └── tests/                       # 138 automated unit & integration tests across 13 test suites
 │       ├── app.test.js              # Health, headers, CORS, 404
 │       ├── models.test.js           # User, AuthChallenge, atomic consumption, upsert
 │       ├── nep413.test.js           # NEP-413 Borsh tag 2^31+413, Ed25519 signing/verifying
@@ -75,7 +78,12 @@ knovara/
 │       ├── security.test.js         # requireAuth, session fixation rotation, secret safety
 │       ├── securityReview.test.js   # Nonce consumption order, concurrent replay, proxy cookies, callback whitelist
 │       ├── rfc8785.test.js          # JCS canonicalization, sorting invariants, Unicode test vectors
-│       └── evidencePipeline.test.js # Evidence upload lifecycle, R2 presigned PUTs, streaming SHA-256, NEP-177 descriptor
+│       ├── evidencePipeline.test.js # Evidence upload lifecycle, R2 presigned PUTs, streaming SHA-256, NEP-177 descriptor
+│       ├── evidenceIntegrityAudit.test.js # TOCTOU defense, immutable key separation, magic byte file signature verification
+│       ├── nearContract.test.js     # NEAR JSON-RPC 2.0 view client, panics, rate limits, timeouts, view decoding
+│       ├── eventParser.test.js      # NEP-297 log parser for NEP-171 (1.2.0) and KNOVARA Licensing (1.0.0) events
+│       ├── transactionReconciliation.test.js # Tx status verification, signer mismatch defense, receipt failure detection, state sync
+│       └── discoveryAndLicensingApis.test.js # Discovery browsing/search/filter, passport query, offer/request privacy, account royalties, intent generation
 ```
 
 ---
@@ -109,7 +117,7 @@ cd backend
 # 1. Install dependencies
 npm install
 
-# 2. Run automated test suite (72 Unit & Integration Tests)
+# 2. Run automated test suite (138 Unit & Integration Tests across 13 test suites)
 npm test
 
 # 3. Run development server with watch mode
