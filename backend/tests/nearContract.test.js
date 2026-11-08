@@ -288,3 +288,56 @@ test("9. getTransactionStatus correctly formats [txHash, senderAccountId] params
   assert.ok(res.status.SuccessValue !== undefined);
 });
 
+test("10. getTransactionStatus with waitUntil: 'FINAL' formats EXPERIMENTAL_tx_status params", async () => {
+  let capturedMethod = null;
+  let capturedParams = null;
+
+  setMockRpcClient({
+    execute: async (method, params) => {
+      capturedMethod = method;
+      capturedParams = params;
+      return {
+        status: { SuccessValue: "" },
+        final_execution_status: "FINAL",
+      };
+    },
+  });
+
+  const txHash = "8zYDQFA2PCgRmizHLxpJDrj2poSycyrgVUnyH5VwnXuk";
+  const res = await getTransactionStatus(txHash, "alice.testnet", { waitUntil: "FINAL" });
+
+  assert.equal(capturedMethod, "EXPERIMENTAL_tx_status");
+  assert.deepEqual(capturedParams, {
+    tx_hash: txHash,
+    sender_account_id: "alice.testnet",
+    wait_until: "FINAL",
+  });
+  assert.equal(res.final_execution_status, "FINAL");
+});
+
+test("11. getTransactionStatus falls back to 'tx' array when EXPERIMENTAL_tx_status is not supported", async () => {
+  const calls = [];
+
+  setMockRpcClient({
+    execute: async (method, params) => {
+      calls.push({ method, params });
+      if (method === "EXPERIMENTAL_tx_status") {
+        throw new NearMethodNotFoundError("ERR_NEAR_METHOD_NOT_FOUND: Method not found", "EXPERIMENTAL_tx_status");
+      }
+      return {
+        status: { SuccessValue: "" },
+        final_execution_status: "FINAL",
+      };
+    },
+  });
+
+  const txHash = "8zYDQFA2PCgRmizHLxpJDrj2poSycyrgVUnyH5VwnXuk";
+  const res = await getTransactionStatus(txHash, "alice.testnet", { waitUntil: "FINAL" });
+
+  assert.equal(calls.length, 2);
+  assert.equal(calls[0].method, "EXPERIMENTAL_tx_status");
+  assert.equal(calls[1].method, "tx");
+  assert.deepEqual(calls[1].params, [txHash, "alice.testnet"]);
+  assert.equal(res.final_execution_status, "FINAL");
+});
+

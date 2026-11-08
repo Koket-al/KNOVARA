@@ -2,7 +2,7 @@ import rateLimit from "express-rate-limit";
 
 export const challengeRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 60, // Limit each IP to 60 challenge requests per window
+  max: process.env.NODE_ENV === "test" ? 1000 : 60, // Limit each IP to 60 challenge requests per window
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -13,7 +13,7 @@ export const challengeRateLimiter = rateLimit({
 
 export const verifyRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 30, // Limit each IP to 30 verification attempts per window
+  max: process.env.NODE_ENV === "test" ? 1000 : 30, // Limit each IP to 30 verification attempts per window
   standardHeaders: true,
   legacyHeaders: false,
   message: {

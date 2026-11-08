@@ -228,10 +228,13 @@ export async function callViewMethod(methodName, args = {}, options = {}) {
 
 /**
  * Retrieves the status and receipt execution outcomes for a transaction.
+ * Requests execution milestone wait_until: "FINAL" where supported.
  *
  * @param {string} txHash - Base58 transaction hash
  * @param {string} senderAccountId - Account ID of the transaction signer
  * @param {object} [options]
+ * @param {string} [options.waitUntil] - Optional milestone (e.g. "FINAL")
+ * @param {string} [options.method] - Explicit RPC method ("EXPERIMENTAL_tx_status" | "tx")
  * @returns {Promise<object>} - Execution outcome including status and receipt outcomes
  */
 export async function getTransactionStatus(txHash, senderAccountId, options = {}) {
@@ -243,9 +246,38 @@ export async function getTransactionStatus(txHash, senderAccountId, options = {}
     throw new NearRpcError("ERR_INVALID_SENDER_ACCOUNT: Sender account ID is required for transaction query", 400);
   }
 
-  // Standard NEAR JSON-RPC 2.0 transaction query parameter format: [txHash, senderAccountId]
-  const params = [txHash.trim(), senderAccountId.trim()];
-  return executeJsonRpc("tx", params, options);
+  const cleanTxHash = txHash.trim();
+  const cleanSender = senderAccountId.trim();
+  const rpcMethod = options.method || (options.waitUntil ? "EXPERIMENTAL_tx_status" : "tx");
+
+  let params;
+  if (rpcMethod === "EXPERIMENTAL_tx_status" || options.waitUntil) {
+    params = {
+      tx_hash: cleanTxHash,
+      sender_account_id: cleanSender,
+      wait_until: options.waitUntil || "FINAL",
+    };
+  } else {
+    params = [cleanTxHash, cleanSender];
+  }
+
+  try {
+    return await executeJsonRpc(rpcMethod, params, options);
+  } catch (err) {
+    // Compatibility fallback: if EXPERIMENTAL_tx_status or object params not supported by node
+    if (rpcMethod === "EXPERIMENTAL_tx_status" || (typeof params === "object" && !Array.isArray(params))) {
+      const errStr = String(err?.message || "");
+      if (
+        errStr.includes("MethodNotFound") ||
+        errStr.includes("Invalid params") ||
+        errStr.includes("parse error") ||
+        err instanceof NearMethodNotFoundError
+      ) {
+        return await executeJsonRpc("tx", [cleanTxHash, cleanSender], options);
+      }
+    }
+    throw err;
+  }
 }
 
 // =========================================================================

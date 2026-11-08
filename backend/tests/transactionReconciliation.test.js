@@ -86,12 +86,18 @@ function buildMockTxStatus({
   logs = [],
   blockHeight = 100000,
   blockHash = "mock-block-hash-1",
+  deposit = null,
+  gas = 30000000000000,
+  actions = null,
+  finalExecutionStatus = "FINAL",
 }) {
   const receipts = [];
 
   // Main execution receipt
   receipts.push({
     id: "receipt-main-1",
+    block_height: blockHeight,
+    block_hash: blockHash,
     outcome: {
       executor_id: receiverId,
       status: receiptFailures.includes("receipt-main-1")
@@ -101,23 +107,39 @@ function buildMockTxStatus({
     },
   });
 
+  let effectiveDeposit = deposit;
+  if (effectiveDeposit === null) {
+    if (methodName === "pay_for_license" || methodName === "pay_license") {
+      effectiveDeposit = "5000000000000000000000000";
+    } else if (methodName === "storage_deposit") {
+      effectiveDeposit = "1000000000000000000000000";
+    } else if (methodName === "storage_withdraw" || methodName === "storage_unregister") {
+      effectiveDeposit = "1";
+    } else {
+      effectiveDeposit = "0";
+    }
+  }
+
+  const effectiveActions = actions || [
+    {
+      FunctionCall: {
+        method_name: methodName,
+        args: Buffer.from(JSON.stringify({})).toString("base64"),
+        deposit: effectiveDeposit,
+        gas,
+      },
+    },
+  ];
+
   return {
     transaction: {
       hash,
       signer_id: signerId,
       receiver_id: receiverId,
-      actions: [
-        {
-          FunctionCall: {
-            method_name: methodName,
-            args: Buffer.from(JSON.stringify({})).toString("base64"),
-            deposit: "0",
-            gas: 30000000000000,
-          },
-        },
-      ],
+      actions: effectiveActions,
     },
     transaction_outcome: {
+      block_height: blockHeight,
       block_hash: blockHash,
       id: "tx-outcome-1",
       outcome: {
@@ -127,7 +149,7 @@ function buildMockTxStatus({
       },
     },
     receipts_outcome: receipts,
-    final_execution_status: status.Failure ? "FINAL_EXECUTION_STATUS_FAILURE" : "FINAL_EXECUTION_STATUS_SUCCESS",
+    final_execution_status: finalExecutionStatus,
     status,
     block_height: blockHeight,
   };
@@ -684,5 +706,563 @@ describe("Transaction Verification & State Synchronization", () => {
     assert.equal(res.status, 200);
     assert.equal(res.body.status, "CONFIRMED");
     assert.equal(res.body.functionMethod, "withdraw_earnings");
+  });
+
+  // =========================================================================
+  // STAGE 4.4 REMEDIATION REGRESSION TESTS
+  // =========================================================================
+
+  it("17. Approval reconciliation after payment has already projected Active cannot revert status", async () => {
+    const { agent, accountId: controllerId } = await createAuthAgent("alice");
+    const requestId = "req-race-1";
+    const txHash = "6zQd824d54uB6D4yfEPgq5WvMBh5B2R6oA9vYhR5Gg51";
+
+    // Seed projection already Active from earlier payment
+    await LicenseRequestProjection.create({
+      request_id: requestId,
+      offer_id: "off-race-1",
+      discovery_id: "disc-race-1",
+      buyer_id: "bob.testnet",
+      status: "Active",
+      activated_at: new Date(1700050000000),
+      expires_at: new Date(1731586000000),
+      block_height: 250000,
+    });
+
+    const mockTx = buildMockTxStatus({
+      hash: txHash,
+      signerId: controllerId,
+      methodName: "approve_license_request",
+      blockHeight: 250000,
+    });
+
+    nearContract.setMockRpcClient(async (method, params) => {
+      if (method === "tx" || method === "EXPERIMENTAL_tx_status") return mockTx;
+      if (method === "query" && params.method_name === "get_license_request") {
+        return encodeViewResult({
+          request_id: requestId,
+          offer_id: "off-race-1",
+          discovery_id: "disc-race-1",
+          buyer_id: "bob.testnet",
+          status: { Active: { activated_at: "1700050000000000000", expires_at: "1731586000000000000" } },
+        });
+      }
+      throw new Error(`Unexpected call: ${method}`);
+    });
+
+    const res = await agent.post("/api/v1/transactions/reconcile").send({ txHash });
+    assert.equal(res.status, 200);
+
+    const proj = await LicenseRequestProjection.findOne({ request_id: requestId });
+    assert.equal(proj.status, "Active");
+  });
+
+  it("18. An older Requested state arriving after Active cannot revert status", async () => {
+    const { agent, accountId: buyerId } = await createAuthAgent("bob");
+    const requestId = "req-race-2";
+    const txHash = "6zQd824d54uB6D4yfEPgq5WvMBh5B2R6oA9vYhR5Gg52";
+
+    await LicenseRequestProjection.create({
+      request_id: requestId,
+      offer_id: "off-race-2",
+      discovery_id: "disc-race-2",
+      buyer_id: buyerId,
+      status: "Active",
+      block_height: 250100,
+    });
+
+    const mockTx = buildMockTxStatus({
+      hash: txHash,
+      signerId: buyerId,
+      methodName: "request_license",
+      blockHeight: 250050,
+    });
+
+    nearContract.setMockRpcClient(async (method, params) => {
+      if (method === "tx" || method === "EXPERIMENTAL_tx_status") return mockTx;
+      if (method === "query" && params.method_name === "get_license_request") {
+        return encodeViewResult({
+          request_id: requestId,
+          offer_id: "off-race-2",
+          discovery_id: "disc-race-2",
+          buyer_id: buyerId,
+          status: "Requested",
+        });
+      }
+      throw new Error(`Unexpected call: ${method}`);
+    });
+
+    const res = await agent.post("/api/v1/transactions/reconcile").send({ txHash });
+    assert.equal(res.status, 200);
+
+    const proj = await LicenseRequestProjection.findOne({ request_id: requestId });
+    assert.equal(proj.status, "Active");
+  });
+
+  it("19. An old Active update arriving after Expired cannot revert Expired", async () => {
+    const { agent, accountId: buyerId } = await createAuthAgent("bob");
+    const requestId = "req-race-3";
+    const txHash = "6zQd824d54uB6D4yfEPgq5WvMBh5B2R6oA9vYhR5Gg53";
+
+    await LicenseRequestProjection.create({
+      request_id: requestId,
+      offer_id: "off-race-3",
+      discovery_id: "disc-race-3",
+      buyer_id: buyerId,
+      status: "Expired",
+      block_height: 260000,
+    });
+
+    const mockTx = buildMockTxStatus({
+      hash: txHash,
+      signerId: buyerId,
+      methodName: "pay_for_license",
+      blockHeight: 259000,
+    });
+
+    nearContract.setMockRpcClient(async (method, params) => {
+      if (method === "tx" || method === "EXPERIMENTAL_tx_status") return mockTx;
+      if (method === "query" && params.method_name === "get_license_request") {
+        return encodeViewResult({
+          request_id: requestId,
+          offer_id: "off-race-3",
+          discovery_id: "disc-race-3",
+          buyer_id: buyerId,
+          status: { Active: { activated_at: "1700050000000000000", expires_at: "1731586000000000000" } },
+        });
+      }
+      throw new Error(`Unexpected call: ${method}`);
+    });
+
+    const res = await agent.post("/api/v1/transactions/reconcile").send({ txHash });
+    assert.equal(res.status, 200);
+
+    const proj = await LicenseRequestProjection.findOne({ request_id: requestId });
+    assert.equal(proj.status, "Expired");
+  });
+
+  it("20. A Rejected request receiving a later invalid transition cannot become Active", async () => {
+    const { agent, accountId: buyerId } = await createAuthAgent("bob");
+    const requestId = "req-race-4";
+    const txHash = "6zQd824d54uB6D4yfEPgq5WvMBh5B2R6oA9vYhR5Gg54";
+
+    await LicenseRequestProjection.create({
+      request_id: requestId,
+      offer_id: "off-race-4",
+      discovery_id: "disc-race-4",
+      buyer_id: buyerId,
+      status: "Rejected",
+      block_height: 240000,
+    });
+
+    const mockTx = buildMockTxStatus({
+      hash: txHash,
+      signerId: buyerId,
+      methodName: "pay_for_license",
+      blockHeight: 240100,
+    });
+
+    nearContract.setMockRpcClient(async (method, params) => {
+      if (method === "tx" || method === "EXPERIMENTAL_tx_status") return mockTx;
+      if (method === "query" && params.method_name === "get_license_request") {
+        return encodeViewResult({
+          request_id: requestId,
+          status: { Rejected: { reason: "Terms rejected by controller" } },
+        });
+      }
+      throw new Error(`Unexpected call: ${method}`);
+    });
+
+    const res = await agent.post("/api/v1/transactions/reconcile").send({ txHash });
+    assert.equal(res.body.status, "RECONCILIATION_REQUIRED");
+
+    const proj = await LicenseRequestProjection.findOne({ request_id: requestId });
+    assert.equal(proj.status, "Rejected");
+  });
+
+  it("21. Unknown on-chain status values fail closed with RECONCILIATION_REQUIRED", async () => {
+    const { agent, accountId: controllerId } = await createAuthAgent("alice");
+    const requestId = "req-unknown-1";
+    const txHash = "6zQd824d54uB6D4yfEPgq5WvMBh5B2R6oA9vYhR5Gg55";
+
+    const mockTx = buildMockTxStatus({
+      hash: txHash,
+      signerId: controllerId,
+      methodName: "approve_license_request",
+      logs: [
+        `EVENT_JSON:{"standard":"knovara_licensing","version":"1.0.0","event":"license_approved","data":[{"request_id":"${requestId}","offer_id":"off-u-1","discovery_id":"disc-u-1","buyer_id":"bob.testnet","rights_controller_id":"${controllerId}","payment_deadline":"1700100000000000000"}]}`,
+      ],
+      blockHeight: 200000,
+    });
+
+    nearContract.setMockRpcClient(async (method, params) => {
+      if (method === "tx" || method === "EXPERIMENTAL_tx_status") return mockTx;
+      if (method === "query" && params.method_name === "get_license_request") {
+        return encodeViewResult({
+          request_id: requestId,
+          status: "CORRUPTED_NON_EXISTENT_STATUS",
+        });
+      }
+      throw new Error(`Unexpected call: ${method}`);
+    });
+
+    const res = await agent.post("/api/v1/transactions/reconcile").send({ txHash });
+    assert.equal(res.body.status, "RECONCILIATION_REQUIRED");
+    assert.ok(res.body.details?.error?.includes("ERR_UNRECOGNIZED_LICENSE_STATUS"));
+
+    const proj = await LicenseRequestProjection.findOne({ request_id: requestId });
+    assert.equal(proj, null);
+  });
+
+  it("22. Concurrent updates to the same license request preserve monotonic progress", async () => {
+    const { agent: agentAlice, accountId: aliceId } = await createAuthAgent("alice");
+    const { agent: agentBob, accountId: bobId } = await createAuthAgent("bob");
+    const requestId = "req-concurrent-1";
+    const txHashApprove = "6zQd824d54uB6D4yfEPgq5WvMBh5B2R6oA9vYhR5Gg56";
+    const txHashPay = "6zQd824d54uB6D4yfEPgq5WvMBh5B2R6oA9vYhR5Gg57";
+
+    await LicenseRequestProjection.create({
+      request_id: requestId,
+      offer_id: "off-c-1",
+      discovery_id: "disc-c-1",
+      buyer_id: bobId,
+      status: "Requested",
+      block_height: 200000,
+    });
+
+    const mockTxApprove = buildMockTxStatus({
+      hash: txHashApprove,
+      signerId: aliceId,
+      methodName: "approve_license_request",
+      logs: [
+        `EVENT_JSON:{"standard":"knovara_licensing","version":"1.0.0","event":"license_approved","data":[{"request_id":"${requestId}","offer_id":"off-c-1","discovery_id":"disc-c-1","buyer_id":"${bobId}","rights_controller_id":"${aliceId}","payment_deadline":"1700100000000000000"}]}`,
+      ],
+      blockHeight: 200010,
+    });
+
+    const mockTxPay = buildMockTxStatus({
+      hash: txHashPay,
+      signerId: bobId,
+      methodName: "pay_for_license",
+      logs: [
+        `EVENT_JSON:{"standard":"knovara_licensing","version":"1.0.0","event":"license_paid","data":[{"request_id":"${requestId}","discovery_id":"disc-c-1","buyer_id":"${bobId}","price_yocto":"5000000000000000000000000"}]}`,
+        `EVENT_JSON:{"standard":"knovara_licensing","version":"1.0.0","event":"license_activated","data":[{"request_id":"${requestId}","discovery_id":"disc-c-1","buyer_id":"${bobId}","activated_at":"1700050000000000000","expires_at":"1731586000000000000"}]}`,
+      ],
+      blockHeight: 200010,
+    });
+
+    nearContract.setMockRpcClient(async (method, params) => {
+      if (method === "tx" || method === "EXPERIMENTAL_tx_status") {
+        const queryHash = Array.isArray(params) ? params[0] : params.tx_hash;
+        return queryHash === txHashApprove ? mockTxApprove : mockTxPay;
+      }
+      if (method === "query") {
+        if (params.method_name === "get_license_request") {
+          return encodeViewResult({
+            request_id: requestId,
+            offer_id: "off-c-1",
+            discovery_id: "disc-c-1",
+            buyer_id: bobId,
+            status: { Active: { activated_at: "1700050000000000000", expires_at: "1731586000000000000" } },
+          });
+        }
+        if (params.method_name === "get_discovery") {
+          return encodeViewResult({
+            discovery_id: "disc-c-1",
+            rights_controller_id: aliceId,
+            beneficiary_splits: [{ account_id: aliceId, basis_points: 10000 }],
+          });
+        }
+        if (params.method_name === "get_claimable_balance") {
+          return encodeViewResult("1000000000000000000000000");
+        }
+      }
+      throw new Error(`Unexpected call: ${method}`);
+    });
+
+    // Execute concurrently
+    const [resPay, resApprove] = await Promise.all([
+      agentBob.post("/api/v1/transactions/reconcile").send({ txHash: txHashPay }),
+      agentAlice.post("/api/v1/transactions/reconcile").send({ txHash: txHashApprove }),
+    ]);
+
+    assert.equal(resPay.status, 200);
+    assert.equal(resApprove.status, 200);
+
+    const proj = await LicenseRequestProjection.findOne({ request_id: requestId });
+    assert.equal(proj.status, "Active");
+  });
+
+  it("23. Same-block transactions with equal block_height preserve forward progress", async () => {
+    const { agent, accountId: controllerId } = await createAuthAgent("alice");
+    const requestId = "req-same-block-1";
+    const txHash = "6zQd824d54uB6D4yfEPgq5WvMBh5B2R6oA9vYhR5Gg58";
+
+    // Request is already Active in the same block (220000)
+    await LicenseRequestProjection.create({
+      request_id: requestId,
+      offer_id: "off-sb-1",
+      discovery_id: "disc-sb-1",
+      buyer_id: "bob.testnet",
+      status: "Active",
+      block_height: 220000,
+    });
+
+    const mockTx = buildMockTxStatus({
+      hash: txHash,
+      signerId: controllerId,
+      methodName: "approve_license_request",
+      blockHeight: 220000,
+    });
+
+    nearContract.setMockRpcClient(async (method, params) => {
+      if (method === "tx" || method === "EXPERIMENTAL_tx_status") return mockTx;
+      if (method === "query" && params.method_name === "get_license_request") {
+        return encodeViewResult({
+          request_id: requestId,
+          offer_id: "off-sb-1",
+          discovery_id: "disc-sb-1",
+          buyer_id: "bob.testnet",
+          status: { Active: { activated_at: "1700050000000000000", expires_at: "1731586000000000000" } },
+        });
+      }
+      throw new Error(`Unexpected call: ${method}`);
+    });
+
+    const res = await agent.post("/api/v1/transactions/reconcile").send({ txHash });
+    assert.equal(res.status, 200);
+
+    const proj = await LicenseRequestProjection.findOne({ request_id: requestId });
+    assert.equal(proj.status, "Active");
+  });
+
+  it("24. Missing final_execution_status is treated as PENDING", async () => {
+    const { agent, accountId } = await createAuthAgent("alice");
+    const txHash = "6zQd824d54uB6D4yfEPgq5WvMBh5B2R6oA9vYhR5Gg59";
+
+    const mockTx = buildMockTxStatus({
+      hash: txHash,
+      signerId: accountId,
+      methodName: "create_license_offer",
+      finalExecutionStatus: null,
+    });
+
+    nearContract.setMockRpcClient(async () => mockTx);
+
+    const res = await agent.post("/api/v1/transactions/reconcile").send({ txHash });
+    assert.equal(res.status, 202);
+    assert.equal(res.body.status, "PENDING");
+
+    const record = await ChainTransaction.findOne({ transaction_hash: txHash });
+    assert.equal(record.status, "PENDING");
+  });
+
+  it("25. EXECUTED_OPTIMISTIC and other non-FINAL milestones are treated as PENDING", async () => {
+    const { agent, accountId } = await createAuthAgent("alice");
+    const txHash = "6zQd824d54uB6D4yfEPgq5WvMBh5B2R6oA9vYhR5Gg6a";
+
+    const mockTx = buildMockTxStatus({
+      hash: txHash,
+      signerId: accountId,
+      methodName: "create_license_offer",
+      finalExecutionStatus: "EXECUTED_OPTIMISTIC",
+    });
+
+    nearContract.setMockRpcClient(async () => mockTx);
+
+    const res = await agent.post("/api/v1/transactions/reconcile").send({ txHash });
+    assert.equal(res.status, 202);
+    assert.equal(res.body.status, "PENDING");
+    assert.equal(res.body.milestone, "EXECUTED_OPTIMISTIC");
+
+    const record = await ChainTransaction.findOne({ transaction_hash: txHash });
+    assert.equal(record.status, "PENDING");
+  });
+
+  it("26. FINAL successful execution is recorded as CONFIRMED", async () => {
+    const { agent, accountId } = await createAuthAgent("alice");
+    const txHash = "6zQd824d54uB6D4yfEPgq5WvMBh5B2R6oA9vYhR5Gg61";
+
+    const mockTx = buildMockTxStatus({
+      hash: txHash,
+      signerId: accountId,
+      methodName: "create_license_offer",
+      finalExecutionStatus: "FINAL",
+      logs: [
+        `EVENT_JSON:{"standard":"knovara_licensing","version":"1.0.0","event":"license_offer_created","data":[{"offer_id":"off-final-1","discovery_id":"disc-1","rights_controller_id":"${accountId}","scope":"commercial_exclusive","price_yocto":"5000000000000000000000000","terms_hash":"${"a".repeat(64)}","duration_days":365}]}`,
+      ],
+    });
+
+    nearContract.setMockRpcClient(async (method, params) => {
+      if (method === "tx" || method === "EXPERIMENTAL_tx_status") return mockTx;
+      if (method === "query" && params.method_name === "get_license_offer") {
+        return encodeViewResult({
+          offer_id: "off-final-1",
+          discovery_id: "disc-1",
+          rights_controller_id: accountId,
+          scope: "commercial_exclusive",
+          price_yocto: "5000000000000000000000000",
+          terms_hash: "a".repeat(64),
+          duration_days: 365,
+          is_active: true,
+          created_at: "1700000000000000000",
+        });
+      }
+      throw new Error(`Unexpected call: ${method}`);
+    });
+
+    const res = await agent.post("/api/v1/transactions/reconcile").send({ txHash });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.status, "CONFIRMED");
+
+    const record = await ChainTransaction.findOne({ transaction_hash: txHash });
+    assert.equal(record.status, "CONFIRMED");
+  });
+
+  it("27. Top-level transaction failure records FAILED and NEVER calls synchronizeState", async () => {
+    const { agent, accountId } = await createAuthAgent("alice");
+    const txHash = "6zQd824d54uB6D4yfEPgq5WvMBh5B2R6oA9vYhR5Gg62";
+
+    const mockTx = buildMockTxStatus({
+      hash: txHash,
+      signerId: accountId,
+      methodName: "create_license_offer",
+      status: { Failure: { ActionError: { kind: "BadSignature" } } },
+    });
+
+    nearContract.setMockRpcClient(async () => mockTx);
+
+    const res = await agent.post("/api/v1/transactions/reconcile").send({ txHash });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.status, "FAILED");
+
+    const record = await ChainTransaction.findOne({ transaction_hash: txHash });
+    assert.equal(record.status, "FAILED");
+
+    // Projections must remain untouched
+    const offers = await LicenseOfferProjection.find({});
+    assert.equal(offers.length, 0);
+  });
+
+  it("28. Receipt execution failure records FAILED and NEVER calls synchronizeState", async () => {
+    const { agent, accountId } = await createAuthAgent("alice");
+    const txHash = "6zQd824d54uB6D4yfEPgq5WvMBh5B2R6oA9vYhR5Gg63";
+
+    const mockTx = buildMockTxStatus({
+      hash: txHash,
+      signerId: accountId,
+      methodName: "create_license_offer",
+      status: { SuccessReceiptId: "receipt-main-1" },
+      receiptFailures: ["receipt-main-1"],
+    });
+
+    nearContract.setMockRpcClient(async () => mockTx);
+
+    const res = await agent.post("/api/v1/transactions/reconcile").send({ txHash });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.status, "FAILED");
+
+    const record = await ChainTransaction.findOne({ transaction_hash: txHash });
+    assert.equal(record.status, "FAILED");
+
+    const offers = await LicenseOfferProjection.find({});
+    assert.equal(offers.length, 0);
+  });
+
+  it("29. Missing or incomplete execution data (empty actions) is rejected safely", async () => {
+    const { agent, accountId } = await createAuthAgent("alice");
+    const txHash = "6zQd824d54uB6D4yfEPgq5WvMBh5B2R6oA9vYhR5Gg64";
+
+    const mockTx = buildMockTxStatus({
+      hash: txHash,
+      signerId: accountId,
+      actions: [],
+    });
+
+    nearContract.setMockRpcClient(async () => mockTx);
+
+    const res = await agent.post("/api/v1/transactions/reconcile").send({ txHash });
+    assert.equal(res.status, 400);
+    assert.equal(res.body.code, "ERR_INVALID_TRANSACTION_ACTIONS");
+  });
+
+  it("30. Transaction containing multiple actions is rejected with ERR_INVALID_TRANSACTION_ACTIONS", async () => {
+    const { agent, accountId } = await createAuthAgent("alice");
+    const txHash = "6zQd824d54uB6D4yfEPgq5WvMBh5B2R6oA9vYhR5Gg65";
+
+    const mockTx = buildMockTxStatus({
+      hash: txHash,
+      signerId: accountId,
+      actions: [
+        { FunctionCall: { method_name: "create_license_offer", args: "e30=", deposit: "0", gas: 30000000000000 } },
+        { Transfer: { deposit: "1000000000000000000000000" } },
+      ],
+    });
+
+    nearContract.setMockRpcClient(async () => mockTx);
+
+    const res = await agent.post("/api/v1/transactions/reconcile").send({ txHash });
+    assert.equal(res.status, 400);
+    assert.equal(res.body.code, "ERR_INVALID_TRANSACTION_ACTIONS");
+  });
+
+  it("31. Single unauthorized action type (Transfer) is rejected with ERR_NO_FUNCTION_CALL_ACTION", async () => {
+    const { agent, accountId } = await createAuthAgent("alice");
+    const txHash = "6zQd824d54uB6D4yfEPgq5WvMBh5B2R6oA9vYhR5Gg66";
+
+    const mockTx = buildMockTxStatus({
+      hash: txHash,
+      signerId: accountId,
+      actions: [{ Transfer: { deposit: "1000000000000000000000000" } }],
+    });
+
+    nearContract.setMockRpcClient(async () => mockTx);
+
+    const res = await agent.post("/api/v1/transactions/reconcile").send({ txHash });
+    assert.equal(res.status, 400);
+    assert.equal(res.body.code, "ERR_NO_FUNCTION_CALL_ACTION");
+  });
+
+  it("32. Invalid method-specific deposits are strictly rejected", async () => {
+    const { agent, accountId } = await createAuthAgent("alice");
+    const txHashA = "6zQd824d54uB6D4yfEPgq5WvMBh5B2R6oA9vYhR5Gg67";
+    const txHashB = "6zQd824d54uB6D4yfEPgq5WvMBh5B2R6oA9vYhR5Gg68";
+    const txHashC = "6zQd824d54uB6D4yfEPgq5WvMBh5B2R6oA9vYhR5Gg69";
+
+    // Subtest A: pay_for_license with 0 deposit
+    const mockTxA = buildMockTxStatus({
+      hash: txHashA,
+      signerId: accountId,
+      methodName: "pay_for_license",
+      deposit: "0",
+    });
+    nearContract.setMockRpcClient(async () => mockTxA);
+    const resA = await agent.post("/api/v1/transactions/reconcile").send({ txHash: txHashA });
+    assert.equal(resA.status, 400);
+    assert.equal(resA.body.code, "ERR_PAYMENT_DEPOSIT_REQUIRED");
+
+    // Subtest B: approve_license_request with attached deposit
+    const mockTxB = buildMockTxStatus({
+      hash: txHashB,
+      signerId: accountId,
+      methodName: "approve_license_request",
+      deposit: "1000000000000000000000000",
+    });
+    nearContract.setMockRpcClient(async () => mockTxB);
+    const resB = await agent.post("/api/v1/transactions/reconcile").send({ txHash: txHashB });
+    assert.equal(resB.status, 400);
+    assert.equal(resB.body.code, "ERR_NON_PAYABLE_METHOD");
+
+    // Subtest C: storage_withdraw with 0 deposit (must be 1 yocto)
+    const mockTxC = buildMockTxStatus({
+      hash: txHashC,
+      signerId: accountId,
+      methodName: "storage_withdraw",
+      deposit: "0",
+    });
+    nearContract.setMockRpcClient(async () => mockTxC);
+    const resC = await agent.post("/api/v1/transactions/reconcile").send({ txHash: txHashC });
+    assert.equal(resC.status, 400);
+    assert.equal(resC.body.code, "ERR_ONE_YOCTO_REQUIRED");
   });
 });

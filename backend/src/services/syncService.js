@@ -8,6 +8,93 @@ import { EvidenceUpload } from "../models/EvidenceUpload.js";
 import * as nearContract from "./nearContract.js";
 
 /**
+ * Monotonic allowed preceding statuses derived strictly from KNOVARA contract lifecycle:
+ * - Requested -> Approved or Rejected
+ * - Approved -> Active or Expired
+ * - Active -> Expired
+ * - Rejected -> (Terminal)
+ * - Expired -> (Terminal)
+ */
+export const ALLOWED_PRECEDING_STATUSES = {
+  Requested: ["Requested"],
+  Approved: ["Requested", "Approved"],
+  Rejected: ["Requested", "Rejected"],
+  Active: ["Requested", "Approved", "Active"],
+  Expired: ["Requested", "Approved", "Active", "Expired"],
+};
+
+/**
+ * Normalizes on-chain NEAR SDK Rust LicenseStatus enum values into structured JS representations.
+ *
+ * Rust enum variants in contracts/knovara/src/license.rs:
+ * - Requested
+ * - Approved { payment_deadline: Timestamp }
+ * - Rejected { reason: String }
+ * - Active { activated_at: Timestamp, expires_at: Timestamp }
+ * - Expired
+ *
+ * @param {string|object} onChainStatus
+ * @returns {{ status: string, paymentDeadline?: Date, rejectionReason?: string, activatedAt?: Date, expiresAt?: Date } | null}
+ */
+export function normalizeLicenseStatus(onChainStatus, record = {}) {
+  if (!onChainStatus) return null;
+
+  if (typeof onChainStatus === "string") {
+    const valid = ["Requested", "Approved", "Rejected", "Active", "Expired"];
+    if (valid.includes(onChainStatus)) {
+      const res = { status: onChainStatus };
+      if (onChainStatus === "Approved") {
+        const nanos = record.payment_deadline;
+        res.paymentDeadline = nanos ? new Date(Number(nanos) / 1_000_000) : null;
+      } else if (onChainStatus === "Rejected") {
+        res.rejectionReason = record.rejection_reason || "";
+      } else if (onChainStatus === "Active") {
+        if (record.activated_at) res.activatedAt = new Date(Number(record.activated_at) / 1_000_000);
+        if (record.expires_at) res.expiresAt = new Date(Number(record.expires_at) / 1_000_000);
+      }
+      return res;
+    }
+    return null;
+  }
+
+  if (typeof onChainStatus === "object" && onChainStatus !== null) {
+    if ("Requested" in onChainStatus) {
+      return { status: "Requested" };
+    }
+    if ("Approved" in onChainStatus) {
+      const details = onChainStatus.Approved || {};
+      const nanos = details.payment_deadline || record.payment_deadline;
+      return {
+        status: "Approved",
+        paymentDeadline: nanos ? new Date(Number(nanos) / 1_000_000) : null,
+      };
+    }
+    if ("Rejected" in onChainStatus) {
+      const details = onChainStatus.Rejected || {};
+      return {
+        status: "Rejected",
+        rejectionReason: typeof details.reason === "string" ? details.reason : (record.rejection_reason || ""),
+      };
+    }
+    if ("Active" in onChainStatus) {
+      const details = onChainStatus.Active || {};
+      const act = details.activated_at || record.activated_at;
+      const exp = details.expires_at || record.expires_at;
+      return {
+        status: "Active",
+        activatedAt: act ? new Date(Number(act) / 1_000_000) : null,
+        expiresAt: exp ? new Date(Number(exp) / 1_000_000) : null,
+      };
+    }
+    if ("Expired" in onChainStatus) {
+      return { status: "Expired" };
+    }
+  }
+
+  return null;
+}
+
+/**
  * Synchronizes authoritative on-chain state to MongoDB projections following a verified transaction.
  *
  * Guarantees:
@@ -29,11 +116,15 @@ export async function synchronizeState({
   events = [],
   signerAccountId,
 }) {
-  const blockHeight = txResult.transaction_outcome?.block_height ||
+  const blockHeight =
+    txResult.transaction_outcome?.block_height ||
     txResult.receipts_outcome?.[0]?.block_height ||
+    txResult.block_height ||
     0;
-  const blockHash = txResult.transaction_outcome?.block_hash ||
+  const blockHash =
+    txResult.transaction_outcome?.block_hash ||
     txResult.receipts_outcome?.[0]?.block_hash ||
+    txResult.block_hash ||
     "";
 
   switch (methodName) {
@@ -230,8 +321,14 @@ async function handleSyncLicenseOffer({ txResult, events, blockHeight, blockHash
 
   // Stale check
   const existing = await LicenseOfferProjection.findOne({ offer_id: offerId });
-  if (existing && existing.block_height > blockHeight) {
-    return { syncStatus: "SYNCED", details: { offerId, ignoredStale: true } };
+  if (existing) {
+    if (existing.block_height > blockHeight) {
+      return { syncStatus: "SYNCED", details: { offerId, ignoredStale: true, reason: "older_block" } };
+    }
+    // Deactivated offer cannot be reactivated
+    if (existing.is_active === false && onChainOffer.is_active === true) {
+      return { syncStatus: "SYNCED", details: { offerId, ignoredStale: true, is_active: false, reason: "cannot_reactivate_deactivated" } };
+    }
   }
 
   await LicenseOfferProjection.findOneAndUpdate(
@@ -285,10 +382,35 @@ async function handleSyncLicenseRequest({ txResult, events, blockHeight, blockHa
     return { syncStatus: "RECONCILIATION_REQUIRED", details: { error: `Request '${requestId}' not found on chain` } };
   }
 
+  const normalized = normalizeLicenseStatus(onChainRecord.status);
+  if (!normalized) {
+    return {
+      syncStatus: "RECONCILIATION_REQUIRED",
+      details: {
+        error: `ERR_UNRECOGNIZED_LICENSE_STATUS: Contract returned unrecognized status ${JSON.stringify(onChainRecord.status)}`,
+      },
+    };
+  }
+
   // Stale check
   const existing = await LicenseRequestProjection.findOne({ request_id: requestId });
-  if (existing && existing.block_height > blockHeight) {
-    return { syncStatus: "SYNCED", details: { requestId, ignoredStale: true } };
+  if (existing) {
+    if (existing.block_height > blockHeight) {
+      return { syncStatus: "SYNCED", details: { requestId, ignoredStale: true, reason: "older_block" } };
+    }
+    // An existing forward status (Approved, Active, Rejected, Expired) must NEVER be reverted to Requested
+    if (existing.status !== "Requested") {
+      return {
+        syncStatus: "SYNCED",
+        details: {
+          requestId,
+          ignoredStale: true,
+          currentStatus: existing.status,
+          targetStatus: normalized.status,
+          reason: "cannot_revert_forward_status",
+        },
+      };
+    }
   }
 
   await LicenseRequestProjection.findOneAndUpdate(
@@ -306,7 +428,7 @@ async function handleSyncLicenseRequest({ txResult, events, blockHeight, blockHa
         duration_days: onChainRecord.duration_days,
         license_terms_hash: onChainRecord.license_terms_hash,
         accepted_terms_hash: onChainRecord.accepted_terms_hash,
-        status: "Requested",
+        status: normalized.status,
         requested_at: new Date(Number(onChainRecord.requested_at) / 1_000_000),
         block_height: blockHeight,
         block_hash: blockHash,
@@ -316,7 +438,7 @@ async function handleSyncLicenseRequest({ txResult, events, blockHeight, blockHa
     { upsert: true, new: true }
   );
 
-  return { syncStatus: "SYNCED", details: { requestId, status: "Requested" } };
+  return { syncStatus: "SYNCED", details: { requestId, status: normalized.status } };
 }
 
 /**
@@ -354,45 +476,83 @@ async function handleSyncLicenseStatusChange({ txResult, events, blockHeight, bl
     return { syncStatus: "RECONCILIATION_REQUIRED", details: { error: `Request '${requestId}' not found on chain` } };
   }
 
-  let normalizedStatus = "Requested";
-  let paymentDeadline = null;
-  let rejectionReason = null;
+  const normalized = normalizeLicenseStatus(onChainRecord.status, onChainRecord);
+  if (!normalized) {
+    return {
+      syncStatus: "RECONCILIATION_REQUIRED",
+      details: {
+        error: `ERR_UNRECOGNIZED_LICENSE_STATUS: Contract returned unrecognized status ${JSON.stringify(onChainRecord.status)}`,
+      },
+    };
+  }
 
-  if (typeof onChainRecord.status === "object" && onChainRecord.status !== null) {
-    if ("Approved" in onChainRecord.status) {
-      normalizedStatus = "Approved";
-      const nanos = onChainRecord.status.Approved?.payment_deadline || statusEvent?.data?.[0]?.payment_deadline;
-      if (nanos) paymentDeadline = new Date(Number(nanos) / 1_000_000);
-    } else if ("Rejected" in onChainRecord.status) {
-      normalizedStatus = "Rejected";
-      rejectionReason = onChainRecord.status.Rejected?.reason || statusEvent?.data?.[0]?.reason || "";
+  const targetStatus = normalized.status;
+
+  // Stale and monotonicity check against existing projection
+  const existing = await LicenseRequestProjection.findOne({ request_id: requestId });
+  if (existing) {
+    if (existing.block_height > blockHeight) {
+      return { syncStatus: "SYNCED", details: { requestId, ignoredStale: true, reason: "older_block" } };
     }
-  } else if (typeof onChainRecord.status === "string") {
-    normalizedStatus = onChainRecord.status;
-    if (normalizedStatus === "Approved") {
-      const nanos = onChainRecord.payment_deadline || statusEvent?.data?.[0]?.payment_deadline;
-      if (nanos) paymentDeadline = new Date(Number(nanos) / 1_000_000);
-    } else if (normalizedStatus === "Rejected") {
-      rejectionReason = onChainRecord.rejection_reason || statusEvent?.data?.[0]?.reason || "";
+    const allowedPriors = ALLOWED_PRECEDING_STATUSES[targetStatus] || [];
+    if (!allowedPriors.includes(existing.status)) {
+      return {
+        syncStatus: "SYNCED",
+        details: {
+          requestId,
+          ignoredStale: true,
+          currentStatus: existing.status,
+          targetStatus,
+          reason: "invalid_preceding_status",
+        },
+      };
     }
   }
 
-  await LicenseRequestProjection.findOneAndUpdate(
-    { request_id: requestId },
-    {
-      $set: {
-        status: normalizedStatus,
-        payment_deadline: paymentDeadline,
-        rejection_reason: rejectionReason,
-        block_height: blockHeight,
-        block_hash: blockHash,
-        last_synced_at: new Date(),
-      },
-    },
-    { upsert: true, new: true }
-  );
+  const allowedPriors = ALLOWED_PRECEDING_STATUSES[targetStatus] || [];
+  const setPayload = {
+    status: targetStatus,
+    payment_deadline: normalized.paymentDeadline || (statusEvent?.data?.[0]?.payment_deadline ? new Date(Number(statusEvent.data[0].payment_deadline) / 1_000_000) : null),
+    rejection_reason: normalized.rejectionReason || null,
+    block_height: blockHeight,
+    block_hash: blockHash,
+    last_synced_at: new Date(),
+  };
 
-  return { syncStatus: "SYNCED", details: { requestId, status: normalizedStatus } };
+  if (existing) {
+    await LicenseRequestProjection.findOneAndUpdate(
+      {
+        request_id: requestId,
+        status: { $in: allowedPriors },
+        block_height: { $lte: blockHeight },
+      },
+      { $set: setPayload }
+    );
+  } else {
+    await LicenseRequestProjection.findOneAndUpdate(
+      { request_id: requestId },
+      {
+        $set: {
+          request_id: requestId,
+          license_id: onChainRecord.license_id || requestId,
+          offer_id: onChainRecord.offer_id,
+          discovery_id: onChainRecord.discovery_id,
+          token_id: onChainRecord.token_id,
+          buyer_id: onChainRecord.buyer_id,
+          scope: onChainRecord.scope,
+          price_yocto: String(onChainRecord.price_yocto),
+          duration_days: onChainRecord.duration_days,
+          license_terms_hash: onChainRecord.license_terms_hash,
+          accepted_terms_hash: onChainRecord.accepted_terms_hash,
+          requested_at: new Date(Number(onChainRecord.requested_at) / 1_000_000),
+          ...setPayload,
+        },
+      },
+      { upsert: true, new: true }
+    );
+  }
+
+  return { syncStatus: "SYNCED", details: { requestId, status: targetStatus } };
 }
 
 /**
@@ -426,32 +586,89 @@ async function handleSyncPaymentAndActivation({ txResult, events, blockHeight, b
     return { syncStatus: "RECONCILIATION_REQUIRED", details: { error: `Request '${requestId}' not found on chain` } };
   }
 
-  let activatedAt = null;
-  let expiresAt = null;
-
-  if (typeof onChainRecord.status === "object" && onChainRecord.status !== null && "Active" in onChainRecord.status) {
-    const active = onChainRecord.status.Active;
-    if (active.activated_at) activatedAt = new Date(Number(active.activated_at) / 1_000_000);
-    if (active.expires_at) expiresAt = new Date(Number(active.expires_at) / 1_000_000);
-  } else if (onChainRecord.activated_at || onChainRecord.expires_at) {
-    if (onChainRecord.activated_at) activatedAt = new Date(Number(onChainRecord.activated_at) / 1_000_000);
-    if (onChainRecord.expires_at) expiresAt = new Date(Number(onChainRecord.expires_at) / 1_000_000);
+  const normalized = normalizeLicenseStatus(onChainRecord.status, onChainRecord);
+  if (!normalized) {
+    return {
+      syncStatus: "RECONCILIATION_REQUIRED",
+      details: {
+        error: `ERR_UNRECOGNIZED_LICENSE_STATUS: Contract returned unrecognized status ${JSON.stringify(onChainRecord.status)}`,
+      },
+    };
   }
 
-  await LicenseRequestProjection.findOneAndUpdate(
-    { request_id: requestId },
-    {
-      $set: {
-        status: "Active",
-        activated_at: activatedAt,
-        expires_at: expiresAt,
-        block_height: blockHeight,
-        block_hash: blockHash,
-        last_synced_at: new Date(),
+  // A Rejected request must never become Active
+  if (normalized.status === "Rejected") {
+    return {
+      syncStatus: "RECONCILIATION_REQUIRED",
+      details: { error: "ERR_CANNOT_ACTIVATE_REJECTED: Rejected license request cannot be activated" },
+    };
+  }
+
+  const targetStatus = normalized.status === "Expired" ? "Expired" : "Active";
+
+  // Stale and monotonicity check against existing projection
+  const existing = await LicenseRequestProjection.findOne({ request_id: requestId });
+  if (existing) {
+    if (existing.block_height > blockHeight) {
+      return { syncStatus: "SYNCED", details: { requestId, ignoredStale: true, reason: "older_block" } };
+    }
+    const allowedPriors = ALLOWED_PRECEDING_STATUSES[targetStatus] || [];
+    if (!allowedPriors.includes(existing.status)) {
+      return {
+        syncStatus: "SYNCED",
+        details: {
+          requestId,
+          ignoredStale: true,
+          currentStatus: existing.status,
+          targetStatus,
+          reason: "invalid_preceding_status",
+        },
+      };
+    }
+  }
+
+  const allowedPriors = ALLOWED_PRECEDING_STATUSES[targetStatus] || [];
+  const setPayload = {
+    status: targetStatus,
+    activated_at: normalized.activatedAt || (paidEvent?.data?.[0]?.activated_at ? new Date(Number(paidEvent.data[0].activated_at) / 1_000_000) : null) || new Date(),
+    expires_at: normalized.expiresAt || (paidEvent?.data?.[0]?.expires_at ? new Date(Number(paidEvent.data[0].expires_at) / 1_000_000) : null),
+    block_height: blockHeight,
+    block_hash: blockHash,
+    last_synced_at: new Date(),
+  };
+
+  if (existing) {
+    await LicenseRequestProjection.findOneAndUpdate(
+      {
+        request_id: requestId,
+        status: { $in: allowedPriors },
+        block_height: { $lte: blockHeight },
       },
-    },
-    { upsert: true, new: true }
-  );
+      { $set: setPayload }
+    );
+  } else {
+    await LicenseRequestProjection.findOneAndUpdate(
+      { request_id: requestId },
+      {
+        $set: {
+          request_id: requestId,
+          license_id: onChainRecord.license_id || requestId,
+          offer_id: onChainRecord.offer_id,
+          discovery_id: onChainRecord.discovery_id,
+          token_id: onChainRecord.token_id,
+          buyer_id: onChainRecord.buyer_id,
+          scope: onChainRecord.scope,
+          price_yocto: String(onChainRecord.price_yocto),
+          duration_days: onChainRecord.duration_days,
+          license_terms_hash: onChainRecord.license_terms_hash,
+          accepted_terms_hash: onChainRecord.accepted_terms_hash,
+          requested_at: new Date(Number(onChainRecord.requested_at) / 1_000_000),
+          ...setPayload,
+        },
+      },
+      { upsert: true, new: true }
+    );
+  }
 
   // Synchronize beneficiary royalty balances
   const discTokenId = onChainRecord.token_id || onChainRecord.discovery_id;
@@ -468,7 +685,10 @@ async function handleSyncPaymentAndActivation({ txResult, events, blockHeight, b
           try {
             const balance = await nearContract.getClaimableBalance(acc);
             await AccountRoyaltyProjection.findOneAndUpdate(
-              { account_id: acc },
+              {
+                account_id: acc,
+                $or: [{ block_height: { $lte: blockHeight } }, { block_height: null }],
+              },
               {
                 $set: {
                   account_id: acc,
@@ -485,7 +705,7 @@ async function handleSyncPaymentAndActivation({ txResult, events, blockHeight, b
     } catch (_e) {}
   }
 
-  return { syncStatus: "SYNCED", details: { requestId, status: "Active", expiresAt } };
+  return { syncStatus: "SYNCED", details: { requestId, status: targetStatus, expiresAt: normalized.expiresAt || null } };
 }
 
 /**
@@ -502,6 +722,15 @@ async function handleSyncWithdrawal({ txResult, events, blockHeight, blockHash, 
     (r) => r.outcome?.status && "Failure" in r.outcome.status
   );
 
+  // Stale check for account royalty projection
+  const existing = await AccountRoyaltyProjection.findOne({ account_id: signerAccountId });
+  if (existing && existing.block_height > blockHeight) {
+    return {
+      syncStatus: failedEvent || hasFailedReceipt ? "RECONCILIATION_REQUIRED" : "SYNCED",
+      details: { account: signerAccountId, ignoredStale: true, reason: "older_block" },
+    };
+  }
+
   // Authoritative re-query of caller's claimable balance and pending withdrawals
   const [claimableBalance, pendingWithdrawals] = await Promise.all([
     nearContract.getClaimableBalance(signerAccountId),
@@ -509,7 +738,10 @@ async function handleSyncWithdrawal({ txResult, events, blockHeight, blockHash, 
   ]);
 
   await AccountRoyaltyProjection.findOneAndUpdate(
-    { account_id: signerAccountId },
+    {
+      account_id: signerAccountId,
+      $or: [{ block_height: { $lte: blockHeight } }, { block_height: null }],
+    },
     {
       $set: {
         account_id: signerAccountId,
@@ -560,8 +792,34 @@ async function handleSyncExpiration({ txResult, events, blockHeight, blockHash }
     return { syncStatus: "RECONCILIATION_REQUIRED", details: { error: "Missing request_id" } };
   }
 
+  // Stale and monotonicity check against existing projection
+  const existing = await LicenseRequestProjection.findOne({ request_id: requestId });
+  if (existing) {
+    if (existing.block_height > blockHeight) {
+      return { syncStatus: "SYNCED", details: { requestId, ignoredStale: true, reason: "older_block" } };
+    }
+    const allowedPriors = ALLOWED_PRECEDING_STATUSES["Expired"];
+    if (!allowedPriors.includes(existing.status)) {
+      return {
+        syncStatus: "SYNCED",
+        details: {
+          requestId,
+          ignoredStale: true,
+          currentStatus: existing.status,
+          targetStatus: "Expired",
+          reason: "invalid_preceding_status",
+        },
+      };
+    }
+  }
+
+  const allowedPriors = ALLOWED_PRECEDING_STATUSES["Expired"];
   await LicenseRequestProjection.findOneAndUpdate(
-    { request_id: requestId },
+    {
+      request_id: requestId,
+      status: { $in: allowedPriors },
+      block_height: { $lte: blockHeight },
+    },
     {
       $set: {
         status: "Expired",
@@ -569,8 +827,7 @@ async function handleSyncExpiration({ txResult, events, blockHeight, blockHash }
         block_hash: blockHash,
         last_synced_at: new Date(),
       },
-    },
-    { upsert: true, new: true }
+    }
   );
 
   return { syncStatus: "SYNCED", details: { requestId, status: "Expired" } };
