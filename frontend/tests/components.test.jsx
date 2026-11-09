@@ -7,6 +7,7 @@ import { Card } from "../src/components/common/Card.jsx";
 import { Modal } from "../src/components/common/Modal.jsx";
 import { LegalDisclaimer } from "../src/components/common/LegalDisclaimer.jsx";
 import { TransactionReviewModal } from "../src/components/transaction/TransactionReviewModal.jsx";
+import { RequestLicenseModal } from "../src/components/licensing/RequestLicenseModal.jsx";
 
 describe("KNOVARA Common UI Components", () => {
   describe("LegalDisclaimer", () => {
@@ -120,6 +121,49 @@ describe("KNOVARA Common UI Components", () => {
       expect(checkbox).not.toBeChecked();
       fireEvent.click(checkbox);
       expect(checkbox).toBeChecked();
+    });
+  });
+
+  describe("RequestLicenseModal", () => {
+    const mockOffer = {
+      offer_id: "offer-test-1",
+      discovery_id: "disc-test-1",
+      scope: "AiModelTraining",
+      price_yocto: "10000000000000000000000",
+      duration_days: 365,
+      terms_hash: "15709676c4926620c634fd990dd9e66cbdc39d8eb08a6b4a16f49a6501bcfe97",
+    };
+
+    it("renders offer details without crashing", () => {
+      render(
+        <RequestLicenseModal
+          isOpen={true}
+          onClose={vi.fn()}
+          offer={mockOffer}
+        />
+      );
+
+      expect(screen.getByText(/Request License — Offer offer-test-1/i)).toBeInTheDocument();
+      expect(screen.getByText("AiModelTraining")).toBeInTheDocument();
+    });
+
+    it("handles offer with missing or undefined terms_hash gracefully", () => {
+      const offerWithoutTerms = {
+        offer_id: "offer-test-2",
+        discovery_id: "disc-test-2",
+        scope: "CommercialUse",
+        price_yocto: "0",
+      };
+
+      render(
+        <RequestLicenseModal
+          isOpen={true}
+          onClose={vi.fn()}
+          offer={offerWithoutTerms}
+        />
+      );
+
+      expect(screen.getByText(/Request License — Offer offer-test-2/i)).toBeInTheDocument();
     });
   });
 });

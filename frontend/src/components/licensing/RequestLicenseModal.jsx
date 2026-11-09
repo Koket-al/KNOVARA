@@ -8,7 +8,7 @@ import { useAuth } from "../../context/AuthContext.jsx";
 import { api } from "../../services/api.js";
 
 export function RequestLicenseModal({ isOpen, onClose, offer, onRequestPrepared }) {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, loginWithWallet } = useAuth();
   const [requestId, setRequestId] = useState(`req-${Date.now().toString(36)}`);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [storageData, setStorageData] = useState(null);
@@ -19,7 +19,13 @@ export function RequestLicenseModal({ isOpen, onClose, offer, onRequestPrepared 
 
   if (!offer) return null;
 
-  const priceNear = yoctoToNear(offer.price_yocto || "0");
+  const offerId = offer.offer_id || offer.offerId || "";
+  const discoveryId = offer.discovery_id || offer.discoveryId || "";
+  const scope = offer.scope || "AcademicResearch";
+  const termsHash = String(offer.terms_hash || offer.termsHash || "");
+  const durationDays = offer.duration_days ?? offer.durationDays ?? 0;
+  const priceYocto = String(offer.price_yocto || offer.priceYocto || "0");
+  const priceNear = yoctoToNear(priceYocto);
 
   useEffect(() => {
     async function checkStorage() {
@@ -38,9 +44,13 @@ export function RequestLicenseModal({ isOpen, onClose, offer, onRequestPrepared 
   }, [isOpen, user?.accountId]);
 
   const isRegistered = storageData?.isRegistered === true;
-  const availableStorageYocto = storageData?.storageBalance?.available || "0";
-  // Requesting a license requires storing license record (~200-300 bytes = ~0.003 NEAR)
-  const hasEnoughStorage = isRegistered && BigInt(availableStorageYocto) >= BigInt("3000000000000000000000");
+  let hasEnoughStorage = false;
+  try {
+    const availableStorageYocto = storageData?.storageBalance?.available || "0";
+    hasEnoughStorage = isRegistered && BigInt(String(availableStorageYocto)) >= BigInt("3000000000000000000000");
+  } catch (_e) {
+    hasEnoughStorage = false;
+  }
 
   const handleDepositStorage = async () => {
     try {
@@ -63,6 +73,14 @@ export function RequestLicenseModal({ isOpen, onClose, offer, onRequestPrepared 
   const handlePrimaryAction = async (e) => {
     e?.preventDefault();
     setError(null);
+
+    // If wallet not connected, prompt login
+    if (!isAuthenticated && !user?.accountId) {
+      if (typeof loginWithWallet === "function") {
+        await loginWithWallet();
+      }
+      return;
+    }
 
     // If storage is not registered, guide user directly to storage deposit
     if (storageData && !hasEnoughStorage) {
@@ -91,8 +109,8 @@ export function RequestLicenseModal({ isOpen, onClose, offer, onRequestPrepared 
 
       const intent = await api.prepareTransactionIntent("request-license", {
         requestId: requestId.trim(),
-        offerId: offer.offer_id,
-        acceptedTermsHash: offer.terms_hash,
+        offerId,
+        acceptedTermsHash: termsHash,
       });
 
       if (onRequestPrepared) {
@@ -111,7 +129,7 @@ export function RequestLicenseModal({ isOpen, onClose, offer, onRequestPrepared 
       <Modal
         isOpen={isOpen}
         onClose={onClose}
-        title={`Request License — Offer ${offer.offer_id}`}
+        title={`Request License — Offer ${offerId}`}
         footer={
           <div style={{ display: "flex", gap: "10px" }}>
             <Button variant="secondary" onClick={onClose} disabled={isSubmitting}>
@@ -120,9 +138,13 @@ export function RequestLicenseModal({ isOpen, onClose, offer, onRequestPrepared 
             <Button
               variant="primary"
               onClick={handlePrimaryAction}
-              isLoading={isSubmitting}
+              isLoading={isSubmitting || isCheckingStorage}
             >
-              {storageData && !hasEnoughStorage ? "Deposit Storage (0.02 NEAR) First →" : "Prepare Request Intent"}
+              {!user?.accountId
+                ? "Connect Wallet to Request"
+                : storageData && !hasEnoughStorage
+                ? "Deposit Storage (0.02 NEAR) First →"
+                : "Prepare Request Intent"}
             </Button>
           </div>
         }
@@ -180,7 +202,7 @@ export function RequestLicenseModal({ isOpen, onClose, offer, onRequestPrepared 
               <div style={{ fontSize: "0.75rem", textTransform: "uppercase", color: "var(--knovara-text-muted)" }}>
                 Scope
               </div>
-              <Badge variant="blue">{offer.scope}</Badge>
+              <Badge variant="blue">{scope}</Badge>
             </div>
 
             <div>
@@ -194,14 +216,14 @@ export function RequestLicenseModal({ isOpen, onClose, offer, onRequestPrepared 
               <div style={{ fontSize: "0.75rem", textTransform: "uppercase", color: "var(--knovara-text-muted)" }}>
                 Duration
               </div>
-              <div>{offer.duration_days} Days</div>
+              <div>{durationDays} Days</div>
             </div>
 
             <div>
               <div style={{ fontSize: "0.75rem", textTransform: "uppercase", color: "var(--knovara-text-muted)" }}>
                 Discovery
               </div>
-              <code>{offer.discovery_id}</code>
+              <code>{discoveryId}</code>
             </div>
           </div>
 
@@ -209,7 +231,7 @@ export function RequestLicenseModal({ isOpen, onClose, offer, onRequestPrepared 
             <label style={{ display: "block", fontSize: "0.75rem", textTransform: "uppercase", marginBottom: "4px" }}>
               Terms Hash (Cryptographically Bound)
             </label>
-            <code style={{ display: "block", padding: "8px" }}>{offer.terms_hash}</code>
+            <code style={{ display: "block", padding: "8px" }}>{termsHash || "Not specified"}</code>
           </div>
 
           <div>
@@ -241,7 +263,7 @@ export function RequestLicenseModal({ isOpen, onClose, offer, onRequestPrepared 
               />
               <span style={{ fontSize: "0.8125rem" }}>
                 I agree to the specified licensing scope and accept the terms cryptographically bound by hash{" "}
-                <code>{offer.terms_hash.slice(0, 12)}...</code>.
+                <code>{termsHash ? `${termsHash.slice(0, 12)}...` : "immutable license hash"}</code>.
               </span>
             </label>
           </div>
@@ -258,7 +280,7 @@ export function RequestLicenseModal({ isOpen, onClose, offer, onRequestPrepared 
         onReconcileSuccess={async () => {
           setStorageModalIntent(null);
           try {
-            const res = await api.getAccountStorage();
+            const res = await api.getAccountStorage(user?.accountId || null);
             setStorageData(res);
           } catch (_e) {}
         }}
@@ -266,4 +288,3 @@ export function RequestLicenseModal({ isOpen, onClose, offer, onRequestPrepared 
     </>
   );
 }
-

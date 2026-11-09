@@ -11,6 +11,7 @@ import { DashboardPage } from "./pages/DashboardPage.jsx";
 import { MyDiscoveriesPage } from "./pages/MyDiscoveriesPage.jsx";
 import { LicensesPage } from "./pages/LicensesPage.jsx";
 import { AccountPage } from "./pages/AccountPage.jsx";
+import { ErrorBoundary } from "./components/common/ErrorBoundary.jsx";
 
 export function App() {
   const [currentPath, setCurrentPath] = useState(() => {
@@ -105,7 +106,9 @@ export function App() {
   return (
     <AuthProvider>
       <Layout currentPath={currentPath} onNavigate={handleNavigate}>
-        {renderRoute()}
+        <ErrorBoundary>
+          {renderRoute()}
+        </ErrorBoundary>
       </Layout>
     </AuthProvider>
   );

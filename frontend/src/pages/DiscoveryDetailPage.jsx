@@ -321,7 +321,7 @@ export function DiscoveryDetailPage({ discoveryId, onNavigate }) {
 
                   <div style={{ fontSize: "0.75rem", color: "var(--knovara-text-secondary)" }}>
                     Offer ID: <code>{offer.offer_id}</code> &middot; Terms Hash:{" "}
-                    <code>{offer.terms_hash.slice(0, 10)}...</code>
+                    <code>{String(offer.terms_hash || offer.termsHash || "").slice(0, 10) || "N/A"}...</code>
                   </div>
                 </div>
 
