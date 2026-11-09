@@ -1,0 +1,64 @@
+:root {
+  /* =====================================================================
+     KNOVARA DESIGN SYSTEM VARIABLES
+     Palette:
+       - Warm beige: #DFD1B7
+       - Light cream: #E9E1CD
+       - Muted taupe: #948878
+       - Primary royal blue: #1363DE
+       - Bright sky blue: #47B5FF
+     Direction: Warm, refined, minimal, editorial, technical.
+     ===================================================================== */
+
+  /* Neutral Backgrounds & Surfaces */
+  --knovara-bg: #E9E1CD;               /* Light cream main background */
+  --knovara-surface: #DFD1B7;          /* Warm beige secondary surface */
+  --knovara-surface-card: #F4EEDF;     /* Subtle elevated paper card */
+  --knovara-surface-highlight: #FAF7F0;/* Lightest paper accent */
+  --knovara-divider: #948878;          /* Muted taupe */
+  --knovara-border: rgba(148, 136, 120, 0.4);
+  --knovara-border-strong: #948878;
+
+  /* Distinctive Blue Brand Accents */
+  --knovara-blue-primary: #1363DE;     /* Royal blue */
+  --knovara-blue-primary-hover: #0E4CB3;
+  --knovara-blue-primary-active: #0A3A8A;
+  --knovara-blue-subtle: rgba(19, 99, 222, 0.08);
+  --knovara-blue-border: rgba(19, 99, 222, 0.35);
+
+  --knovara-blue-sky: #47B5FF;         /* Bright sky blue */
+  --knovara-blue-sky-hover: #2DA6F5;
+  --knovara-blue-sky-subtle: rgba(71, 181, 255, 0.18);
+  --knovara-focus-ring: rgba(71, 181, 255, 0.55);
+
+  /* High-Contrast Readable Body Neutrals */
+  --knovara-text-primary: #1C1917;     /* Deep technical charcoal */
+  --knovara-text-secondary: #574F45;   /* Warm dark taupe */
+  --knovara-text-muted: #7E7467;       /* Mid taupe */
+  --knovara-text-inverse: #FFFFFF;
+
+  /* Status Colors */
+  --knovara-status-success: #1B6932;
+  --knovara-status-success-bg: rgba(27, 105, 50, 0.12);
+  --knovara-status-warning: #945B00;
+  --knovara-status-warning-bg: rgba(148, 91, 0, 0.12);
+  --knovara-status-danger: #B31D28;
+  --knovara-status-danger-bg: rgba(179, 29, 40, 0.12);
+
+  /* Typography */
+  --font-heading: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: "JetBrains Mono", "IBM Plex Mono", "SF Mono", Menlo, Consolas, Monaco, monospace;
+
+  /* Layout & Sizing */
+  --container-max-width: 1200px;
+  --header-height: 70px;
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+
+  /* Shadows (minimal and restrained) */
+  --shadow-subtle: 0 1px 3px rgba(28, 25, 23, 0.05);
+  --shadow-card: 0 2px 6px rgba(28, 25, 23, 0.06), 0 1px 2px rgba(28, 25, 23, 0.04);
+  --shadow-elevated: 0 8px 24px rgba(28, 25, 23, 0.1);
+}
+

@@ -473,3 +473,47 @@ test("18. Successful registration preparation produces complete payload for smar
   assert.equal(getMetaRes.body.presignedUrl, undefined);
 });
 
+test("19. Authenticated server upload relay (PUT /evidence/uploads/:uploadId/content) stores bytes directly to R2 and completes verification", async () => {
+  const { agent, accountId } = await createAuthenticatedAgent("alice");
+
+  const testPdfBytes = Buffer.from("%PDF-1.4: Direct Relay Test Document Content", "utf8");
+  const expectedHash = crypto.createHash("sha256").update(testPdfBytes).digest("hex").toLowerCase();
+
+  // 1. Request upload intent
+  const intentRes = await agent.post("/api/v1/discoveries/evidence/uploads").send({
+    filename: "T2T_relay.pdf",
+    contentType: "application/pdf",
+    fileSize: testPdfBytes.length,
+    classification: "TECHNICAL_DOCUMENTATION",
+  });
+  assert.equal(intentRes.status, 201);
+  const { uploadId, r2Key } = intentRes.body;
+
+  // 2. Unauthenticated relay request is rejected
+  const unauthApp = createApp();
+  const unauthRes = await request(unauthApp)
+    .put(`/api/v1/discoveries/evidence/uploads/${uploadId}/content`)
+    .set("Content-Type", "application/pdf")
+    .send(testPdfBytes);
+  assert.equal(unauthRes.status, 401);
+
+  // 3. Relay upload via authenticated agent
+  const relayRes = await agent
+    .put(`/api/v1/discoveries/evidence/uploads/${uploadId}/content`)
+    .set("Content-Type", "application/pdf")
+    .send(testPdfBytes);
+  assert.equal(relayRes.status, 200);
+  assert.equal(relayRes.body.success, true);
+  assert.equal(relayRes.body.bytesReceived, testPdfBytes.length);
+
+  // 4. Complete upload and verify streaming SHA-256
+  const completeRes = await agent
+    .post(`/api/v1/discoveries/evidence/uploads/${uploadId}/complete`)
+    .send({});
+  assert.equal(completeRes.status, 200);
+  assert.equal(completeRes.body.upload.status, "VERIFIED");
+  assert.equal(completeRes.body.upload.sha256Digest, expectedHash);
+  assert.equal(completeRes.body.upload.actualSize, testPdfBytes.length);
+});
+
+

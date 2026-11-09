@@ -40,9 +40,28 @@ export function createApp(options = {}) {
   app.use(helmet());
 
   // CORS configuration
+  const allowedOrigins = [
+    config.FRONTEND_ORIGIN,
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+  ].filter(Boolean);
+
   app.use(
     cors({
-      origin: config.FRONTEND_ORIGIN,
+      origin: (origin, callback) => {
+        // Allow requests with no origin (e.g. mobile apps, curl, server-to-server)
+        if (!origin) return callback(null, true);
+        if (
+          allowedOrigins.includes(origin) ||
+          origin.startsWith("http://localhost:") ||
+          origin.startsWith("http://127.0.0.1:")
+        ) {
+          return callback(null, true);
+        }
+        return callback(new Error("CORS policy violation"), false);
+      },
       credentials: true,
       methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
       allowedHeaders: ["Content-Type", "Authorization"],

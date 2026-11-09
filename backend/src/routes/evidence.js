@@ -1,4 +1,4 @@
-import { Router } from "express";
+import express, { Router } from "express";
 import crypto from "crypto";
 import { config } from "../config/env.js";
 import { requireAuth } from "../middleware/auth.js";
@@ -135,6 +135,70 @@ router.post("/evidence/uploads", requireAuth, async (req, res, next) => {
     next(err);
   }
 });
+
+/**
+ * PUT /discoveries/evidence/uploads/:uploadId/content
+ * Authenticated direct upload relay for evidence files.
+ * Streams file bytes directly to Cloudflare R2 using backend credentials.
+ * Provides resilient fallback when browser direct-to-R2 presigned upload is blocked by CORS.
+ */
+router.put(
+  "/evidence/uploads/:uploadId/content",
+  requireAuth,
+  express.raw({ type: () => true, limit: `${config.MAX_EVIDENCE_FILE_BYTES}b` }),
+  async (req, res, next) => {
+    try {
+      const { uploadId } = req.params;
+      const ownerAccountId = req.user.accountId;
+
+      const upload = await EvidenceUpload.findOne({
+        upload_id: uploadId,
+        owner_account_id: ownerAccountId,
+        status: "PENDING_UPLOAD",
+      });
+
+      if (!upload) {
+        return res.status(404).json({
+          error: "Pending evidence upload record not found or already finalized",
+          code: "ERR_UPLOAD_NOT_FOUND",
+        });
+      }
+
+      if (!req.body || (Buffer.isBuffer(req.body) && req.body.length === 0)) {
+        return res.status(400).json({
+          error: "Uploaded content body is empty",
+          code: "ERR_EMPTY_FILE",
+        });
+      }
+
+      const fileBuffer = Buffer.isBuffer(req.body) ? req.body : Buffer.from(req.body);
+
+      if (fileBuffer.length > config.MAX_EVIDENCE_FILE_BYTES) {
+        return res.status(400).json({
+          error: `File size exceeds maximum limit of ${config.MAX_EVIDENCE_FILE_BYTES} bytes`,
+          code: "ERR_FILE_TOO_LARGE",
+        });
+      }
+
+      // Store directly into Cloudflare R2 at upload.r2_object_key
+      await putObject(
+        config.R2_EVIDENCE_BUCKET,
+        upload.r2_object_key,
+        fileBuffer,
+        upload.declared_content_type
+      );
+
+      return res.status(200).json({
+        success: true,
+        uploadId: upload.upload_id,
+        r2Key: upload.r2_object_key,
+        bytesReceived: fileBuffer.length,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
 
 /**
  * POST /discoveries/evidence/uploads/:uploadId/complete
