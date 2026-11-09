@@ -17,15 +17,22 @@ html {
 }
 
 body {
-  font-family: var(--font-mono);
+  font-family: var(--font-body);
   font-size: 0.9375rem;
   line-height: 1.6;
   background-color: var(--knovara-bg);
   color: var(--knovara-text-primary);
   min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+  background-image: 
+    radial-gradient(ellipse 75% 45% at 50% -5%, rgba(198, 244, 50, 0.12) 0%, transparent 65%),
+    linear-gradient(to right, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 100% 100%, 48px 48px, 48px 48px;
 }
 
-/* Headings: Bold, clean, architectural sans-serif */
+/* Headings */
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
   color: var(--knovara-text-primary);
@@ -35,13 +42,14 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 h1 {
-  font-size: clamp(2rem, 3.5vw, 3rem);
+  font-size: clamp(2.2rem, 4vw, 3.25rem);
   font-weight: 800;
   letter-spacing: -0.03em;
 }
 
 h2 {
-  font-size: clamp(1.5rem, 2.5vw, 2.125rem);
+  font-size: clamp(1.6rem, 2.8vw, 2.25rem);
+  letter-spacing: -0.02em;
 }
 
 h3 {
@@ -52,15 +60,33 @@ h4 {
   font-size: 1.125rem;
 }
 
+/* Elegant Editorial Serif Display Typography (matching screenshot) */
+.hero-serif-title {
+  font-family: var(--font-serif);
+  font-size: clamp(2.75rem, 5.5vw, 4.5rem);
+  font-weight: 400;
+  line-height: 1.08;
+  letter-spacing: -0.025em;
+  color: var(--knovara-text-primary);
+}
+
+.hero-serif-title em {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+  color: var(--knovara-lime);
+  text-shadow: 0 0 25px rgba(198, 244, 50, 0.45);
+}
+
 /* Links */
 a {
-  color: var(--knovara-blue-primary);
+  color: var(--knovara-lime);
   text-decoration: none;
   transition: color 0.15s ease, border-color 0.15s ease;
 }
 
 a:hover {
-  color: var(--knovara-blue-primary-hover);
+  color: var(--knovara-lime-hover);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
@@ -79,8 +105,8 @@ select,
 textarea {
   width: 100%;
   padding: 10px 14px;
-  background-color: var(--knovara-surface-highlight);
-  border: 1px solid var(--knovara-border-strong);
+  background-color: var(--knovara-surface);
+  border: 1px solid var(--knovara-border);
   border-radius: var(--radius-sm);
   color: var(--knovara-text-primary);
   font-family: var(--font-mono);
@@ -92,7 +118,7 @@ input:focus,
 select:focus,
 textarea:focus {
   outline: none;
-  border-color: var(--knovara-blue-primary);
+  border-color: var(--knovara-lime);
   box-shadow: 0 0 0 3px var(--knovara-focus-ring);
 }
 
@@ -102,115 +128,137 @@ textarea::placeholder {
   opacity: 0.8;
 }
 
-/* Buttons */
+/* Buttons: Modern Sleek Pill Styling */
 .knovara-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 10px 18px;
-  border-radius: var(--radius-sm);
+  padding: 10px 20px;
+  border-radius: var(--radius-pill);
   font-family: var(--font-heading);
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
   border: 1px solid transparent;
-  transition: all 0.15s ease;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   text-decoration: none !important;
   white-space: nowrap;
 }
 
 .knovara-btn:disabled {
-  opacity: 0.55;
+  opacity: 0.45;
   cursor: not-allowed;
   pointer-events: none;
 }
 
+/* Primary Button: Vibrant Lime Green pill with Midnight Black text */
 .knovara-btn-primary {
-  background-color: var(--knovara-blue-primary);
+  background-color: var(--knovara-lime);
   color: var(--knovara-text-inverse);
-  border-color: var(--knovara-blue-primary);
+  border-color: var(--knovara-lime);
+  font-weight: 700;
+  box-shadow: 0 2px 10px rgba(198, 244, 50, 0.2);
 }
 
 .knovara-btn-primary:hover:not(:disabled) {
-  background-color: var(--knovara-blue-primary-hover);
-  border-color: var(--knovara-blue-primary-hover);
+  background-color: var(--knovara-lime-hover);
+  border-color: var(--knovara-lime-hover);
   color: var(--knovara-text-inverse);
+  box-shadow: var(--glow-lime);
+  transform: translateY(-1px);
 }
 
+/* Secondary Button: Dark glassmorphic pill with subtle border */
 .knovara-btn-secondary {
-  background-color: var(--knovara-surface-card);
+  background-color: rgba(255, 255, 255, 0.06);
   color: var(--knovara-text-primary);
   border-color: var(--knovara-border-strong);
+  backdrop-filter: blur(8px);
 }
 
 .knovara-btn-secondary:hover:not(:disabled) {
-  background-color: var(--knovara-surface-highlight);
-  border-color: var(--knovara-blue-primary);
-  color: var(--knovara-blue-primary);
+  background-color: rgba(255, 255, 255, 0.12);
+  border-color: var(--knovara-lime);
+  color: var(--knovara-lime);
+  transform: translateY(-1px);
 }
 
+/* Outline Button */
 .knovara-btn-outline {
   background-color: transparent;
-  color: var(--knovara-blue-primary);
-  border-color: var(--knovara-blue-primary);
+  color: var(--knovara-lime);
+  border-color: var(--knovara-border-lime);
 }
 
 .knovara-btn-outline:hover:not(:disabled) {
-  background-color: var(--knovara-blue-subtle);
-  color: var(--knovara-blue-primary-hover);
+  background-color: var(--knovara-lime-subtle);
+  border-color: var(--knovara-lime);
+  color: var(--knovara-lime-hover);
 }
 
+/* Sky/Lime Accent Button */
 .knovara-btn-sky {
-  background-color: var(--knovara-blue-sky);
-  color: #0A2540;
-  border-color: var(--knovara-blue-sky);
+  background-color: var(--knovara-lime);
+  color: var(--knovara-text-inverse);
+  border-color: var(--knovara-lime);
+  font-weight: 700;
 }
 
 .knovara-btn-sky:hover:not(:disabled) {
-  background-color: var(--knovara-blue-sky-hover);
+  background-color: var(--knovara-lime-hover);
+  box-shadow: var(--glow-lime);
 }
 
+/* Danger Button */
 .knovara-btn-danger {
   background-color: var(--knovara-status-danger);
-  color: var(--knovara-text-inverse);
+  color: #FFFFFF;
   border-color: var(--knovara-status-danger);
 }
 
+.knovara-btn-danger:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
 .knovara-btn-sm {
-  padding: 6px 12px;
+  padding: 6px 14px;
   font-size: 0.8125rem;
 }
 
 .knovara-btn-lg {
-  padding: 14px 24px;
+  padding: 12px 26px;
   font-size: 1rem;
 }
 
-/* Card Surface */
+/* Card Surfaces: Dark Glassmorphic with Subtle Border */
 .knovara-card {
   background-color: var(--knovara-surface-card);
   border: 1px solid var(--knovara-border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   padding: 24px;
   box-shadow: var(--shadow-card);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  backdrop-filter: blur(12px);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  position: relative;
 }
 
 .knovara-card-interactive:hover {
-  border-color: var(--knovara-blue-primary);
-  box-shadow: 0 4px 12px rgba(19, 99, 222, 0.08);
+  border-color: var(--knovara-border-lime);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7), var(--glow-lime-subtle);
+  transform: translateY(-2px);
 }
 
-/* Code & Hash display */
+/* Monospace & Code Tags */
 code, .knovara-mono-tag {
   font-family: var(--font-mono);
-  background-color: rgba(148, 136, 120, 0.18);
-  padding: 2px 6px;
+  background-color: rgba(255, 255, 255, 0.08);
+  padding: 2px 7px;
   border-radius: var(--radius-xs);
   font-size: 0.8125rem;
-  color: var(--knovara-text-primary);
+  color: var(--knovara-lime);
   word-break: break-all;
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .knovara-hash-badge {
@@ -218,19 +266,20 @@ code, .knovara-mono-tag {
   font-size: 0.75rem;
   background-color: var(--knovara-surface);
   border: 1px solid var(--knovara-border);
-  padding: 4px 8px;
-  border-radius: var(--radius-xs);
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
   display: inline-block;
   word-break: break-all;
+  color: var(--knovara-text-secondary);
 }
 
-/* Badges */
+/* Badges: Sleek Luminous Pills */
 .knovara-badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 3px 8px;
-  border-radius: var(--radius-xs);
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
   font-family: var(--font-mono);
   font-size: 0.75rem;
   font-weight: 600;
@@ -239,34 +288,29 @@ code, .knovara-mono-tag {
   border: 1px solid transparent;
 }
 
-.knovara-badge-blue {
-  background-color: var(--knovara-blue-subtle);
-  color: var(--knovara-blue-primary);
-  border-color: var(--knovara-blue-border);
-}
-
+.knovara-badge-blue,
 .knovara-badge-sky {
-  background-color: var(--knovara-blue-sky-subtle);
-  color: #0A4A7A;
-  border-color: rgba(71, 181, 255, 0.4);
+  background-color: var(--knovara-lime-subtle);
+  color: var(--knovara-lime);
+  border-color: var(--knovara-border-lime);
 }
 
 .knovara-badge-success {
-  background-color: var(--knovara-status-success-bg);
-  color: var(--knovara-status-success);
-  border-color: rgba(27, 105, 50, 0.3);
+  background-color: rgba(198, 244, 50, 0.14);
+  color: var(--knovara-lime);
+  border-color: var(--knovara-border-lime);
 }
 
 .knovara-badge-warning {
   background-color: var(--knovara-status-warning-bg);
   color: var(--knovara-status-warning);
-  border-color: rgba(148, 91, 0, 0.3);
+  border-color: rgba(251, 191, 36, 0.3);
 }
 
 .knovara-badge-danger {
   background-color: var(--knovara-status-danger-bg);
   color: var(--knovara-status-danger);
-  border-color: rgba(179, 29, 40, 0.3);
+  border-color: rgba(248, 113, 113, 0.3);
 }
 
 /* Alert Boxes */
@@ -279,33 +323,34 @@ code, .knovara-mono-tag {
 }
 
 .knovara-alert-info {
-  background-color: var(--knovara-blue-subtle);
-  border-color: var(--knovara-blue-border);
+  background-color: var(--knovara-lime-subtle);
+  border-color: var(--knovara-border-lime);
   color: var(--knovara-text-primary);
 }
 
 .knovara-alert-warning {
   background-color: var(--knovara-status-warning-bg);
-  border-color: rgba(148, 91, 0, 0.3);
+  border-color: rgba(251, 191, 36, 0.3);
   color: var(--knovara-status-warning);
 }
 
 .knovara-alert-danger {
   background-color: var(--knovara-status-danger-bg);
-  border-color: rgba(179, 29, 40, 0.3);
+  border-color: rgba(248, 113, 113, 0.3);
   color: var(--knovara-status-danger);
 }
 
 .knovara-alert-success {
   background-color: var(--knovara-status-success-bg);
-  border-color: rgba(27, 105, 50, 0.3);
-  color: var(--knovara-status-success);
+  border-color: var(--knovara-border-lime);
+  color: var(--knovara-lime);
 }
 
 /* Legal Disclaimer Banner */
 .knovara-legal-banner {
-  background-color: var(--knovara-surface);
-  border-left: 3px solid var(--knovara-blue-primary);
+  background-color: rgba(198, 244, 50, 0.04);
+  border-left: 3px solid var(--knovara-lime);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   padding: 14px 18px;
   font-size: 0.8125rem;
   color: var(--knovara-text-secondary);
@@ -314,7 +359,7 @@ code, .knovara-mono-tag {
 }
 
 .knovara-legal-banner strong {
-  color: var(--knovara-text-primary);
+  color: var(--knovara-lime);
 }
 
 /* Tables */
@@ -344,7 +389,7 @@ code, .knovara-mono-tag {
 }
 
 .knovara-table tr:hover td {
-  background-color: rgba(223, 209, 183, 0.3);
+  background-color: rgba(198, 244, 50, 0.03);
 }
 
 /* Layout Utilities */
@@ -353,8 +398,8 @@ code, .knovara-mono-tag {
   max-width: var(--container-max-width);
   margin-left: auto;
   margin-right: auto;
-  padding-left: 20px;
-  padding-right: 20px;
+  padding-left: 24px;
+  padding-right: 24px;
 }
 
 .knovara-grid-2 {
@@ -392,3 +437,86 @@ code, .knovara-mono-tag {
 .gap-md { gap: 16px; }
 .gap-lg { gap: 24px; }
 
+/* Inline Spinner */
+.knovara-spinner-inline {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: knovara-spin 0.75s linear infinite;
+}
+
+@keyframes knovara-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* =====================================================================
+   LUMINOUS LIGHTING & ARCHITECTURAL LINE EFFECTS
+   (Directly inspired by reference screenshot)
+   ===================================================================== */
+
+/* Subtle glowing line divider */
+.knovara-glow-line {
+  height: 1px;
+  width: 100%;
+  background: linear-gradient(90deg, transparent 0%, rgba(198, 244, 50, 0.45) 50%, transparent 100%);
+  margin: 32px 0;
+}
+
+/* Vertical light beam guide line */
+.knovara-beam-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: linear-gradient(180deg, transparent 0%, rgba(198, 244, 50, 0.25) 50%, transparent 100%);
+}
+
+/* Bottom Showcase Section with Upward Radiant Neon Light Aura */
+.knovara-bottom-aura {
+  position: relative;
+  overflow: visible;
+  padding-bottom: 24px;
+}
+
+.knovara-bottom-aura::before {
+  content: "";
+  position: absolute;
+  bottom: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  max-width: 960px;
+  height: 380px;
+  background: radial-gradient(ellipse 65% 55% at 50% 90%, rgba(198, 244, 50, 0.28) 0%, rgba(198, 244, 50, 0.08) 50%, transparent 78%);
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(20px);
+}
+
+/* Highlight badge pill */
+.hero-pill-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--knovara-text-secondary);
+  font-size: 0.8125rem;
+  font-family: var(--font-heading);
+  letter-spacing: 0.02em;
+}
+
+.hero-pill-badge .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--knovara-lime);
+  box-shadow: 0 0 8px var(--knovara-lime);
+}

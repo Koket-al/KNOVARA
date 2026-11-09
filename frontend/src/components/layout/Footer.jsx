@@ -6,48 +6,48 @@ export function Footer() {
   return (
     <footer
       style={{
-        backgroundColor: "var(--knovara-surface-card)",
-        borderTop: "1px solid var(--knovara-border-strong)",
-        marginTop: "64px",
-        padding: "48px 0 32px 0",
+        backgroundColor: "rgba(11, 11, 12, 0.95)",
+        borderTop: "1px solid var(--knovara-border)",
+        marginTop: "80px",
+        padding: "48px 0 36px 0",
+        position: "relative",
       }}
     >
       <div className="knovara-container" style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
         <LegalDisclaimer />
+
+        <div className="knovara-glow-line" style={{ margin: "16px 0" }} />
 
         <div
           className="flex-between"
           style={{
             flexWrap: "wrap",
             gap: "16px",
-            borderTop: "1px solid var(--knovara-border)",
-            paddingTop: "24px",
           }}
         >
           <div>
-            <div style={{ fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: "1.1rem" }}>
-              KNOVARA
+            <div style={{ fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: "1.15rem", color: "#FFFFFF" }}>
+              KNOVARA<span style={{ color: "var(--knovara-lime)" }}>.</span>
             </div>
             <div style={{ fontSize: "0.8125rem", color: "var(--knovara-text-secondary)", marginTop: "4px" }}>
-              Decentralized Discovery Rights & Cryptographic Verification Registry
+              Permanent cryptographic priority and decentralized licensing on NEAR.
             </div>
           </div>
 
           <div style={{ fontSize: "0.8125rem", color: "var(--knovara-text-muted)" }}>
             <div>
-              Network: <strong>NEAR {config.NEAR_NETWORK}</strong>
+              Network: <strong style={{ color: "var(--knovara-lime)" }}>NEAR {config.NEAR_NETWORK}</strong>
             </div>
-            <div style={{ marginTop: "2px" }}>
+            <div style={{ marginTop: "4px" }}>
               Contract: <code>{config.NEAR_CONTRACT_ID}</code>
             </div>
           </div>
         </div>
 
-        <div style={{ fontSize: "0.75rem", color: "var(--knovara-text-muted)", textAlign: "center", marginTop: "12px" }}>
-          Built with React 18 &middot; Node.js 24 &middot; MongoDB Atlas &middot; Cloudflare R2 &middot; NEP-171 / NEP-177 / NEP-413
+        <div style={{ fontSize: "0.75rem", color: "var(--knovara-text-muted)", textAlign: "center", marginTop: "16px" }}>
+          Built with React &middot; NEAR Protocol &middot; Cloudflare R2 &middot; NEP-171 &middot; NEP-413
         </div>
       </div>
     </footer>
   );
 }
-

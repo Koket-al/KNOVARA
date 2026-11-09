@@ -47,8 +47,9 @@ export function Header({ currentPath = "/", onNavigate }) {
   return (
     <header
       style={{
-        backgroundColor: "var(--knovara-surface-card)",
-        borderBottom: "1px solid var(--knovara-border-strong)",
+        backgroundColor: "rgba(11, 11, 12, 0.85)",
+        backdropFilter: "blur(14px)",
+        borderBottom: "1px solid var(--knovara-border)",
         position: "sticky",
         top: 0,
         zIndex: 100,
@@ -83,12 +84,12 @@ export function Header({ currentPath = "/", onNavigate }) {
                 fontFamily: "var(--font-heading)",
                 fontSize: "1.5rem",
                 fontWeight: 900,
-                color: "var(--knovara-blue-primary)",
+                color: "#FFFFFF",
                 letterSpacing: "-0.03em",
                 whiteSpace: "nowrap",
               }}
             >
-              KNOVARA
+              KNOVARA<span style={{ color: "var(--knovara-lime)" }}>.</span>
             </span>
           </a>
           <span
@@ -99,13 +100,13 @@ export function Header({ currentPath = "/", onNavigate }) {
               letterSpacing: "0.08em",
               color: "var(--knovara-text-muted)",
               whiteSpace: "nowrap",
-              borderLeft: "1px solid var(--knovara-border-strong)",
+              borderLeft: "1px solid var(--knovara-border)",
               paddingLeft: "10px",
               marginLeft: "4px",
             }}
             className="brand-subtitle"
           >
-            DISCOVERY RIGHTS REGISTRY
+            DISCOVERY REGISTRY
           </span>
         </div>
 
