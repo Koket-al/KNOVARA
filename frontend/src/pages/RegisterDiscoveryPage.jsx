@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Card } from "../components/common/Card.jsx";
 import { Button } from "../components/common/Button.jsx";
 import { Badge } from "../components/common/Badge.jsx";
@@ -8,6 +8,7 @@ import { EvidenceUploader } from "../components/evidence/EvidenceUploader.jsx";
 import { TransactionReviewModal } from "../components/transaction/TransactionReviewModal.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import { api } from "../services/api.js";
+import { nearToYocto } from "../services/formatters.js";
 
 const CATEGORIES = [
   "COMPUTER_SCIENCE",
@@ -55,6 +56,42 @@ export function RegisterDiscoveryPage({ onNavigate }) {
   const [prepError, setPrepError] = useState(null);
   const [preparedPayload, setPreparedPayload] = useState(null);
   const [pendingIntent, setPendingIntent] = useState(null);
+
+  // Storage Registration Check
+  const [storageData, setStorageData] = useState(null);
+  const [isCheckingStorage, setIsCheckingStorage] = useState(false);
+  const [storageModalIntent, setStorageModalIntent] = useState(null);
+
+  const checkStorage = useCallback(async () => {
+    if (!isAuthenticated) return;
+    try {
+      setIsCheckingStorage(true);
+      const res = await api.getAccountStorage();
+      setStorageData(res);
+    } catch (_e) {
+      // Non-fatal
+    } finally {
+      setIsCheckingStorage(false);
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    checkStorage();
+  }, [checkStorage]);
+
+  const handleQuickStorageDeposit = async () => {
+    try {
+      setPrepError(null);
+      const intent = await api.prepareTransactionIntent("storage-deposit", {
+        accountId: user?.accountId,
+        amountYocto: nearToYocto("0.01"),
+        registrationOnly: false,
+      });
+      setStorageModalIntent(intent);
+    } catch (err) {
+      setPrepError(err.message || "Failed to prepare storage deposit intent");
+    }
+  };
 
   const totalBps = splits.reduce((sum, s) => sum + (Number(s.basis_points) || 0), 0);
 
@@ -151,6 +188,31 @@ export function RegisterDiscoveryPage({ onNavigate }) {
           <Button variant="primary" size="sm" onClick={() => loginWithWallet()}>
             Connect Wallet
           </Button>
+        </div>
+      )}
+
+      {isAuthenticated && storageData && !storageData.isRegistered && (
+        <div
+          className="knovara-alert knovara-alert-warning"
+          style={{ display: "flex", flexDirection: "column", gap: "10px" }}
+        >
+          <div style={{ fontWeight: 700, fontSize: "0.9375rem" }}>
+            ⚠️ Smart Contract Storage Registration Required
+          </div>
+          <div style={{ fontSize: "0.8125rem", color: "var(--knovara-text-primary)" }}>
+            The KNOVARA smart contract requires your account (<code>{user?.accountId}</code>) to register a storage
+            balance (one-time refundable deposit of <strong>0.01 NEAR</strong>) before minting Passport NFTs or
+            registering discoveries. Otherwise the contract transaction will revert with <em>ERR_REGISTRANT_NOT_REGISTERED</em>.
+          </div>
+          <div>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={handleQuickStorageDeposit}
+            >
+              Deposit Storage (0.01 NEAR) &rarr;
+            </Button>
+          </div>
         </div>
       )}
 
@@ -349,13 +411,28 @@ export function RegisterDiscoveryPage({ onNavigate }) {
             type="submit"
             variant="primary"
             size="lg"
-            disabled={!isAuthenticated || totalBps !== 10000 || verifiedUploads.length === 0 || isPreparing}
+            disabled={!isAuthenticated || (storageData && !storageData.isRegistered) || totalBps !== 10000 || verifiedUploads.length === 0 || isPreparing}
             isLoading={isPreparing}
           >
-            Review & Prepare On-Chain Registration &rarr;
+            {storageData && !storageData.isRegistered
+              ? "Storage Registration Required First"
+              : "Review & Prepare On-Chain Registration \u2192"}
           </Button>
         </div>
       </form>
+
+      {/* Quick Storage Deposit Modal */}
+      <TransactionReviewModal
+        isOpen={Boolean(storageModalIntent)}
+        onClose={() => setStorageModalIntent(null)}
+        intent={storageModalIntent}
+        title="Register NEP-145 Storage Balance"
+        explanation="Deposits 0.01 NEAR refundable storage to activate discovery registration and NFT minting permissions."
+        onReconcileSuccess={async () => {
+          setStorageModalIntent(null);
+          await checkStorage();
+        }}
+      />
 
       {/* Prepared Registration Review Modal */}
       <TransactionReviewModal
