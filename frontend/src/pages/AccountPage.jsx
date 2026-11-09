@@ -18,7 +18,7 @@ export function AccountPage({ onNavigate }) {
   const [error, setError] = useState(null);
 
   // Storage deposit form
-  const [depositNearInput, setDepositNearInput] = useState("0.0027");
+  const [depositNearInput, setDepositNearInput] = useState("0.05");
 
   // Transaction Lookup
   const [lookupTxHash, setLookupTxHash] = useState("");

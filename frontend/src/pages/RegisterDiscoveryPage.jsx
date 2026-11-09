@@ -8,7 +8,7 @@ import { EvidenceUploader } from "../components/evidence/EvidenceUploader.jsx";
 import { TransactionReviewModal } from "../components/transaction/TransactionReviewModal.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import { api } from "../services/api.js";
-import { nearToYocto } from "../services/formatters.js";
+import { nearToYocto, yoctoToNear } from "../services/formatters.js";
 
 const CATEGORIES = [
   "COMPUTER_SCIENCE",
@@ -79,12 +79,22 @@ export function RegisterDiscoveryPage({ onNavigate }) {
     checkStorage();
   }, [checkStorage]);
 
+  const availableStorageNear = storageData?.storageBalance
+    ? yoctoToNear(storageData.storageBalance.available, 4)
+    : "0";
+
+  // The contract bills effective bytes used (typically ~800 to 1,200 bytes = ~0.008 to 0.012 NEAR)
+  // to caller's available storage balance. Require at least 0.015 NEAR available to prevent reverts.
+  const hasEnoughAvailable =
+    storageData?.isRegistered &&
+    BigInt(storageData?.storageBalance?.available || "0") >= BigInt("15000000000000000000000");
+
   const handleQuickStorageDeposit = async () => {
     try {
       setPrepError(null);
       const intent = await api.prepareTransactionIntent("storage-deposit", {
         accountId: user?.accountId,
-        amountYocto: nearToYocto("0.01"),
+        amountYocto: nearToYocto("0.05"),
         registrationOnly: false,
       });
       setStorageModalIntent(intent);
@@ -191,18 +201,27 @@ export function RegisterDiscoveryPage({ onNavigate }) {
         </div>
       )}
 
-      {isAuthenticated && storageData && !storageData.isRegistered && (
+      {isAuthenticated && storageData && !hasEnoughAvailable && (
         <div
           className="knovara-alert knovara-alert-warning"
           style={{ display: "flex", flexDirection: "column", gap: "10px" }}
         >
           <div style={{ fontWeight: 700, fontSize: "0.9375rem" }}>
-            ⚠️ Smart Contract Storage Registration Required
+            ⚠️ {!storageData.isRegistered ? "Smart Contract Storage Registration Required" : "Insufficient Available Storage Deposit"}
           </div>
           <div style={{ fontSize: "0.8125rem", color: "var(--knovara-text-primary)" }}>
-            The KNOVARA smart contract requires your account (<code>{user?.accountId}</code>) to register a storage
-            balance (one-time refundable deposit of <strong>0.01 NEAR</strong>) before minting Passport NFTs or
-            registering discoveries. Otherwise the contract transaction will revert with <em>ERR_REGISTRANT_NOT_REGISTERED</em>.
+            {!storageData.isRegistered ? (
+              <>
+                The KNOVARA smart contract requires your account (<code>{user?.accountId}</code>) to register a storage
+                balance before registering discoveries.
+              </>
+            ) : (
+              <>
+                Your account is registered but currently has only <strong>{availableStorageNear} NEAR</strong> available.
+                Writing on-chain discovery metadata and NFT state uses ~800–1,200 bytes of state (billed at 0.00001 NEAR/byte = ~0.012 NEAR).
+                Please top up your refundable storage balance (recommended <strong>0.05 NEAR</strong>) to proceed.
+              </>
+            )}
           </div>
           <div>
             <Button
@@ -210,7 +229,7 @@ export function RegisterDiscoveryPage({ onNavigate }) {
               size="sm"
               onClick={handleQuickStorageDeposit}
             >
-              Deposit Storage (0.01 NEAR) &rarr;
+              {!storageData.isRegistered ? "Deposit Storage (0.05 NEAR) \u2192" : "Top Up Storage (0.05 NEAR) \u2192"}
             </Button>
           </div>
         </div>
@@ -411,11 +430,11 @@ export function RegisterDiscoveryPage({ onNavigate }) {
             type="submit"
             variant="primary"
             size="lg"
-            disabled={!isAuthenticated || (storageData && !storageData.isRegistered) || totalBps !== 10000 || verifiedUploads.length === 0 || isPreparing}
+            disabled={!isAuthenticated || (storageData && !hasEnoughAvailable) || totalBps !== 10000 || verifiedUploads.length === 0 || isPreparing}
             isLoading={isPreparing}
           >
-            {storageData && !storageData.isRegistered
-              ? "Storage Registration Required First"
+            {storageData && !hasEnoughAvailable
+              ? "Storage Top-Up Required First"
               : "Review & Prepare On-Chain Registration \u2192"}
           </Button>
         </div>
@@ -426,8 +445,8 @@ export function RegisterDiscoveryPage({ onNavigate }) {
         isOpen={Boolean(storageModalIntent)}
         onClose={() => setStorageModalIntent(null)}
         intent={storageModalIntent}
-        title="Register NEP-145 Storage Balance"
-        explanation="Deposits 0.01 NEAR refundable storage to activate discovery registration and NFT minting permissions."
+        title="Register / Top Up NEP-145 Storage Balance"
+        explanation="Deposits 0.05 NEAR refundable storage to fund on-chain discovery metadata bytes and support NFT minting."
         onReconcileSuccess={async () => {
           setStorageModalIntent(null);
           await checkStorage();
