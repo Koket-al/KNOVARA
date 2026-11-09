@@ -250,11 +250,11 @@ router.post("/:licenseId/files/:fileId/download-url", requireAuth, async (req, r
       });
     }
 
-    // Verify evidence is associated with the licensed discovery
-    if (evidence.attached_discovery_id && evidence.attached_discovery_id !== license.discovery_id) {
+    // Verify evidence is strictly ATTACHED and associated with the licensed discovery
+    if (evidence.status !== "ATTACHED" || evidence.attached_discovery_id !== license.discovery_id) {
       return res.status(403).json({
-        error: "Evidence file is not part of this licensed discovery",
-        code: "ERR_EVIDENCE_OUT_OF_SCOPE",
+        error: "Evidence file is not attached to this licensed discovery",
+        code: "ERR_EVIDENCE_NOT_ATTACHED_OR_OUT_OF_SCOPE",
       });
     }
 

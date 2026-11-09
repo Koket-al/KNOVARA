@@ -451,10 +451,10 @@ test("18. Successful registration preparation produces complete payload for smar
   assert.equal(payload.beneficiary_splits[0].basis_points, 8000);
   assert.equal(payload.beneficiary_splits[1].basis_points, 2000);
 
-  // Verify that evidence uploads were marked as ATTACHED in MongoDB
+  // Verify that prepare-registration preserves VERIFIED status and does NOT prematurely mark evidence as ATTACHED
   const updatedUp1 = await EvidenceUpload.findOne({ upload_id: up1.body.uploadId });
-  assert.equal(updatedUp1.status, "ATTACHED");
-  assert.equal(updatedUp1.attached_discovery_id, "disc-mrna-99");
+  assert.equal(updatedUp1.status, "VERIFIED");
+  assert.equal(updatedUp1.attached_discovery_id, undefined);
 
   // Verify that EvidenceManifest was persisted in MongoDB and stored in R2
   const manifestDoc = await EvidenceManifest.findOne({ discovery_id: "disc-mrna-99" });

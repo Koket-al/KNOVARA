@@ -549,13 +549,9 @@ router.post("/prepare-registration", requireAuth, async (req, res, next) => {
       { upsert: true, new: true }
     );
 
-    // 4. Mark all attached evidence uploads as ATTACHED
-    await EvidenceUpload.updateMany(
-      { upload_id: { $in: evidenceUploadIds } },
-      { $set: { status: "ATTACHED", attached_discovery_id: cleanDiscoveryId } }
-    );
-
-    // 5. Return complete transaction payload for frontend NEAR wallet
+    // 4. Return complete transaction payload for frontend NEAR wallet
+    // Invariant: EvidenceUpload records remain in VERIFIED status until finalized
+    // on-chain registration is confirmed and reconciled via /api/v1/transactions/reconcile.
     return res.status(200).json({
       discovery_id: cleanDiscoveryId,
       token_id: cleanTokenId,
