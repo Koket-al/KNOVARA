@@ -135,14 +135,17 @@ export function LicensesPage({ onNavigate }) {
   };
 
   // Handle Download Protected Evidence
-  const handleDownloadFile = async (licenseId, fileId) => {
+  const handleDownloadFile = async (licenseId, fileId = "primary-evidence") => {
     try {
-      setDownloadingFileId(fileId);
+      setDownloadingFileId(licenseId);
       setDownloadError(null);
-      const res = await api.getEvidenceDownloadUrl(licenseId, fileId);
-      if (res && res.downloadUrl) {
+      const res = await api.getEvidenceDownloadUrl(licenseId, fileId || "primary-evidence");
+      const targetUrl = res?.downloadUrl || res?.presignedUrl;
+      if (targetUrl) {
         // Open download link in new window or trigger download
-        window.open(res.downloadUrl, "_blank");
+        window.open(targetUrl, "_blank");
+      } else {
+        throw new Error("No download URL returned by server");
       }
     } catch (err) {
       setDownloadError(err.message || "Download access denied by backend policy");
