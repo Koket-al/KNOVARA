@@ -17,19 +17,9 @@ export function RequestLicenseModal({ isOpen, onClose, offer, onRequestPrepared 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
-  if (!offer) return null;
-
-  const offerId = offer.offer_id || offer.offerId || "";
-  const discoveryId = offer.discovery_id || offer.discoveryId || "";
-  const scope = offer.scope || "AcademicResearch";
-  const termsHash = String(offer.terms_hash || offer.termsHash || "");
-  const durationDays = offer.duration_days ?? offer.durationDays ?? 0;
-  const priceYocto = String(offer.price_yocto || offer.priceYocto || "0");
-  const priceNear = yoctoToNear(priceYocto);
-
   useEffect(() => {
     async function checkStorage() {
-      if (!isOpen) return;
+      if (!isOpen || !offer) return;
       try {
         setIsCheckingStorage(true);
         const res = await api.getAccountStorage(user?.accountId || null);
@@ -41,7 +31,17 @@ export function RequestLicenseModal({ isOpen, onClose, offer, onRequestPrepared 
       }
     }
     checkStorage();
-  }, [isOpen, user?.accountId]);
+  }, [isOpen, offer, user?.accountId]);
+
+  if (!isOpen || !offer) return null;
+
+  const offerId = offer.offer_id || offer.offerId || "";
+  const discoveryId = offer.discovery_id || offer.discoveryId || "";
+  const scope = offer.scope || "AcademicResearch";
+  const termsHash = String(offer.terms_hash || offer.termsHash || "");
+  const durationDays = offer.duration_days ?? offer.durationDays ?? 0;
+  const priceYocto = String(offer.price_yocto || offer.priceYocto || "0");
+  const priceNear = yoctoToNear(priceYocto);
 
   const isRegistered = storageData?.isRegistered === true;
   let hasEnoughStorage = false;
