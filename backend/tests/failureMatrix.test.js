@@ -310,6 +310,48 @@ test("Failure Mode 8: Duplicate reconciliation returns idempotent cached result 
 test("Failure Mode 9: Inactive, unapproved, or expired license cannot download evidence files", async () => {
   const { agent: buyerAgent, accountId: buyerAccountId } = await createAuthenticatedAgent("bob");
 
+  setMockRpcClient(async (method, params) => {
+    if (method === "query" && params?.request_type === "call_function") {
+      const licenseMap = {
+        "req-unpaid-901": {
+          request_id: "req-unpaid-901",
+          discovery_id: "disc-901",
+          token_id: "token-901",
+          buyer_id: buyerAccountId,
+          status: "Requested",
+        },
+        "req-expired-901": {
+          request_id: "req-expired-901",
+          discovery_id: "disc-901",
+          token_id: "token-901",
+          buyer_id: buyerAccountId,
+          status: "Expired",
+        },
+        "req-active-901": {
+          request_id: "req-active-901",
+          discovery_id: "disc-901",
+          token_id: "token-901",
+          buyer_id: buyerAccountId,
+          status: {
+            Active: {
+              activated_at: "1700000000000000000",
+              expires_at: String((Date.now() + 86400000) * 1000000),
+            },
+          },
+        },
+      };
+
+      if (params.method_name === "get_license") {
+        const parsedArgs = JSON.parse(Buffer.from(params.args_base64, "base64").toString("utf8"));
+        const record = licenseMap[parsedArgs.license_id];
+        return {
+          result: record ? Array.from(Buffer.from(JSON.stringify(record), "utf8")) : [],
+        };
+      }
+    }
+    return { result: [] };
+  });
+
   // Create evidence file
   const evidence = await EvidenceUpload.create({
     upload_id: "upl-evidence-901",
@@ -380,6 +422,8 @@ test("Failure Mode 9: Inactive, unapproved, or expired license cannot download e
   const intruderRes = await intruderAgent.post(`/api/v1/licenses/${reqActive.request_id}/files/${evidence.upload_id}/download-url`);
   assert.equal(intruderRes.status, 403);
   assert.equal(intruderRes.body.code, "ERR_FORBIDDEN_NOT_LICENSEE");
+
+  resetMockRpcClient();
 });
 
 test("Failure Mode 10: RPC timeout aborts and throws NearRpcTimeoutError with clean retry handling", async () => {

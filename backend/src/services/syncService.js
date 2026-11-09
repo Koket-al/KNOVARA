@@ -205,28 +205,50 @@ async function handleSyncDiscoveryRegistration({ txResult, events, blockHeight, 
 
   const discoveryId = onChainDiscovery.discovery_id;
 
-  // 3. Consistency checks against locally prepared evidence manifest and public descriptor
+  // 3. Strict fail-closed consistency checks against locally prepared evidence manifest and public descriptor
   const preparedManifest = await EvidenceManifest.findOne({ discovery_id: discoveryId });
   const preparedDescriptor = await PublicMetadataDescriptor.findOne({ discovery_id: discoveryId });
 
-  let hashMismatch = false;
-  if (preparedManifest) {
-    if (preparedManifest.evidence_manifest_hash !== onChainDiscovery.evidence_manifest_hash) {
-      hashMismatch = true;
-    }
-  }
+  let syncStatus = "SYNCED";
+  let reconciliationError = null;
 
-  if (preparedDescriptor) {
-    const meta = onChainNft.metadata || {};
-    if (meta.reference && preparedDescriptor.reference && meta.reference !== preparedDescriptor.reference) {
-      hashMismatch = true;
-    }
-    if (meta.reference_hash && preparedDescriptor.reference_hash && meta.reference_hash !== preparedDescriptor.reference_hash) {
-      hashMismatch = true;
-    }
+  if (!preparedManifest) {
+    syncStatus = "RECONCILIATION_REQUIRED";
+    reconciliationError = "MISSING_EVIDENCE_MANIFEST";
+  } else if (!preparedDescriptor) {
+    syncStatus = "RECONCILIATION_REQUIRED";
+    reconciliationError = "MISSING_PUBLIC_METADATA_DESCRIPTOR";
+  } else if (onChainDiscovery.token_id && onChainDiscovery.token_id !== tokenId) {
+    syncStatus = "RECONCILIATION_REQUIRED";
+    reconciliationError = "TOKEN_ID_ASSOCIATION_MISMATCH";
+  } else if (
+    !preparedManifest.evidence_manifest_hash ||
+    !onChainDiscovery.evidence_manifest_hash ||
+    preparedManifest.evidence_manifest_hash.toLowerCase() !== onChainDiscovery.evidence_manifest_hash.toLowerCase()
+  ) {
+    syncStatus = "RECONCILIATION_REQUIRED";
+    reconciliationError = "MANIFEST_HASH_MISMATCH";
+  } else if (
+    !preparedDescriptor.reference_hash ||
+    !onChainNft.metadata?.reference_hash ||
+    preparedDescriptor.reference_hash !== onChainNft.metadata.reference_hash
+  ) {
+    syncStatus = "RECONCILIATION_REQUIRED";
+    reconciliationError = "REFERENCE_HASH_MISMATCH";
+  } else if (
+    !preparedDescriptor.reference ||
+    !onChainNft.metadata?.reference ||
+    preparedDescriptor.reference !== onChainNft.metadata.reference
+  ) {
+    syncStatus = "RECONCILIATION_REQUIRED";
+    reconciliationError = "REFERENCE_URL_MISMATCH";
+  } else if (
+    !Array.isArray(preparedManifest.evidence_item_ids) ||
+    preparedManifest.evidence_item_ids.length === 0
+  ) {
+    syncStatus = "RECONCILIATION_REQUIRED";
+    reconciliationError = "INVALID_MANIFEST_EVIDENCE_ITEMS";
   }
-
-  const syncStatus = hashMismatch ? "RECONCILIATION_REQUIRED" : "SYNCED";
 
   // 4. Stale update prevention
   const existing = await DiscoveryProjection.findOne({ discovery_id: discoveryId });
@@ -266,8 +288,8 @@ async function handleSyncDiscoveryRegistration({ txResult, events, blockHeight, 
     { upsert: true, new: true }
   );
 
-  // 6. Mark EvidenceUpload records as ATTACHED if reconciliation succeeded
-  if (syncStatus === "SYNCED" && preparedManifest?.evidence_item_ids) {
+  // 6. Mark EvidenceUpload records as ATTACHED strictly if reconciliation succeeded
+  if (syncStatus === "SYNCED" && Array.isArray(preparedManifest?.evidence_item_ids) && preparedManifest.evidence_item_ids.length > 0) {
     await EvidenceUpload.updateMany(
       { upload_id: { $in: preparedManifest.evidence_item_ids } },
       { $set: { status: "ATTACHED", attached_discovery_id: discoveryId } }
@@ -279,7 +301,8 @@ async function handleSyncDiscoveryRegistration({ txResult, events, blockHeight, 
     details: {
       discoveryId,
       tokenId,
-      hashMismatch,
+      hashMismatch: syncStatus === "RECONCILIATION_REQUIRED",
+      ...(reconciliationError ? { error: reconciliationError } : {}),
     },
   };
 }

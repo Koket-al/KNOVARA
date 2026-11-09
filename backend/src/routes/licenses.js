@@ -7,6 +7,7 @@ import { DiscoveryProjection } from "../models/DiscoveryProjection.js";
 import { EvidenceUpload } from "../models/EvidenceUpload.js";
 import { generatePresignedDownloadUrl } from "../services/r2Storage.js";
 import * as nearContract from "../services/nearContract.js";
+import { normalizeLicenseStatus } from "../services/syncService.js";
 
 const router = Router();
 
@@ -173,40 +174,66 @@ router.post("/:licenseId/files/:fileId/download-url", requireAuth, async (req, r
       });
     }
 
-    // Step 1: Find license record in MongoDB projection or fallback to on-chain view
-    let license = await LicenseRequestProjection.findOne({ request_id: licenseId.trim() });
-    let onChainRecord = null;
+    const cleanLicenseId = licenseId.trim();
+    const cleanFileId = fileId.trim();
 
-    if (!license) {
-      try {
-        onChainRecord = await nearContract.getLicense(licenseId.trim());
-      } catch (_e) {
-        // Ignored, will check below
-      }
-
-      if (!onChainRecord) {
-        return res.status(404).json({
-          error: `License '${licenseId}' was not found`,
-          code: "ERR_LICENSE_NOT_FOUND",
-        });
-      }
-
-      // Reconstruct minimal license object from on-chain view
-      license = {
-        request_id: onChainRecord.request_id,
-        offer_id: onChainRecord.offer_id,
-        discovery_id: onChainRecord.discovery_id,
-        buyer_id: onChainRecord.buyer_id,
-        rights_controller_id: onChainRecord.rights_controller_id,
-        status: onChainRecord.status === "Active" ? "Active" : onChainRecord.status,
-        expires_at: onChainRecord.expires_at ? new Date(Number(BigInt(onChainRecord.expires_at) / 1000000n)) : null,
-      };
+    // Step 1: Authoritative on-chain license verification via NEAR RPC (Fail Closed)
+    let onChainRecord;
+    try {
+      onChainRecord = await nearContract.getLicense(cleanLicenseId);
+    } catch (rpcErr) {
+      return res.status(503).json({
+        error: "Authoritative NEAR state verification failed due to RPC error. Download access failed closed.",
+        code: "ERR_CHAIN_VERIFICATION_UNAVAILABLE",
+        details: rpcErr.message,
+      });
     }
 
-    // Step 2: Verify caller wallet authorization (buyer or rights controller)
+    if (!onChainRecord) {
+      return res.status(404).json({
+        error: `License '${cleanLicenseId}' was not found on-chain`,
+        code: "ERR_LICENSE_NOT_FOUND",
+      });
+    }
+
+    // Step 2: Normalize Rust enum status and assert Active
+    const normalized = normalizeLicenseStatus(onChainRecord.status);
+    if (!normalized || normalized.status !== "Active") {
+      const statusName = normalized?.status || "Unknown";
+      if (statusName === "Expired") {
+        return res.status(403).json({
+          error: "This license has expired on-chain. Renew the license to regain evidence file access.",
+          code: "ERR_LICENSE_EXPIRED",
+        });
+      }
+      return res.status(403).json({
+        error: `Authoritative on-chain license is not active (current status: '${statusName}'). Payment must be confirmed on-chain prior to download access.`,
+        code: "ERR_LICENSE_NOT_ACTIVE",
+      });
+    }
+
+    // Step 3: Check authoritative on-chain expiration timestamp
+    if (normalized.expiresAt && normalized.expiresAt.getTime() <= Date.now()) {
+      return res.status(403).json({
+        error: "This license has expired on-chain. Renew the license to regain evidence file access.",
+        code: "ERR_LICENSE_EXPIRED",
+      });
+    }
+
+    // Step 4: Verify caller wallet authorization (buyer or rights controller)
+    const projection = await LicenseRequestProjection.findOne({ request_id: cleanLicenseId });
+    let rightsControllerId = projection?.rights_controller_id || null;
+
+    if (!rightsControllerId) {
+      try {
+        const disc = await nearContract.getDiscovery(onChainRecord.token_id || onChainRecord.discovery_id);
+        rightsControllerId = disc?.rights_controller_id || null;
+      } catch (_e) {}
+    }
+
     const isAuthorizedCaller =
-      license.buyer_id === sessionAccountId ||
-      license.rights_controller_id === sessionAccountId;
+      onChainRecord.buyer_id === sessionAccountId ||
+      (rightsControllerId && rightsControllerId === sessionAccountId);
 
     if (!isAuthorizedCaller) {
       return res.status(403).json({
@@ -215,59 +242,36 @@ router.post("/:licenseId/files/:fileId/download-url", requireAuth, async (req, r
       });
     }
 
-    // Step 3: Assert license status is Active
-    if (license.status === "Expired") {
-      return res.status(403).json({
-        error: "This license has expired. Renew the license to regain evidence file access.",
-        code: "ERR_LICENSE_EXPIRED",
-      });
-    }
-
-    if (license.status !== "Active") {
-      return res.status(403).json({
-        error: `License is not active (current status: '${license.status}'). Payment must be confirmed on-chain prior to download access.`,
-        code: "ERR_LICENSE_NOT_ACTIVE",
-      });
-    }
-
-    // Step 4: Check license time expiration
-    if (license.expires_at && new Date(license.expires_at).getTime() <= Date.now()) {
-      return res.status(403).json({
-        error: "This license has expired. Renew the license to regain evidence file access.",
-        code: "ERR_LICENSE_EXPIRED",
-      });
-    }
-
     // Step 5: Locate the evidence item
     const evidence = await EvidenceUpload.findOne({
-      upload_id: fileId.trim(),
+      upload_id: cleanFileId,
     });
 
     if (!evidence) {
       return res.status(404).json({
-        error: `Evidence file '${fileId}' was not found`,
+        error: `Evidence file '${cleanFileId}' was not found`,
         code: "ERR_EVIDENCE_NOT_FOUND",
       });
     }
 
-    // Verify evidence is strictly ATTACHED and associated with the licensed discovery
-    if (evidence.status !== "ATTACHED" || evidence.attached_discovery_id !== license.discovery_id) {
+    // Step 6: Verify evidence is strictly ATTACHED and associated with the licensed discovery
+    if (evidence.status !== "ATTACHED" || evidence.attached_discovery_id !== onChainRecord.discovery_id) {
       return res.status(403).json({
         error: "Evidence file is not attached to this licensed discovery",
         code: "ERR_EVIDENCE_NOT_ATTACHED_OR_OUT_OF_SCOPE",
       });
     }
 
-    // Step 6: Compute constrained presigned TTL (min 900 seconds, remaining license seconds)
+    // Step 7: Compute constrained presigned TTL (min 900 seconds, remaining license seconds)
     let ttlSeconds = 900;
-    if (license.expires_at) {
-      const remainingSecs = Math.floor((new Date(license.expires_at).getTime() - Date.now()) / 1000);
+    if (normalized.expiresAt) {
+      const remainingSecs = Math.floor((normalized.expiresAt.getTime() - Date.now()) / 1000);
       if (remainingSecs > 0) {
         ttlSeconds = Math.min(900, remainingSecs);
       }
     }
 
-    // Step 7: Issue presigned GET download URL
+    // Step 8: Issue presigned GET download URL
     const presignedUrl = await generatePresignedDownloadUrl({
       bucket: config.R2_EVIDENCE_BUCKET,
       key: evidence.r2_object_key,
@@ -276,7 +280,7 @@ router.post("/:licenseId/files/:fileId/download-url", requireAuth, async (req, r
     });
 
     return res.status(200).json({
-      licenseId: license.request_id,
+      licenseId: onChainRecord.request_id || cleanLicenseId,
       fileId: evidence.upload_id,
       filename: evidence.original_filename,
       presignedUrl,

@@ -14,6 +14,7 @@ import { LicenseRequestProjection } from "../src/models/LicenseRequestProjection
 import { AccountRoyaltyProjection } from "../src/models/AccountRoyaltyProjection.js";
 import { EvidenceUpload } from "../src/models/EvidenceUpload.js";
 import { EvidenceManifest } from "../src/models/EvidenceManifest.js";
+import { PublicMetadataDescriptor } from "../src/models/PublicMetadataDescriptor.js";
 import { config } from "../src/config/env.js";
 
 const CONTRACT_ID = config.NEAR_CONTRACT_ID; // "koket-knovara-dev.testnet"
@@ -347,6 +348,14 @@ describe("Transaction Verification & State Synchronization", () => {
       discovery_id: discoveryId,
       evidence_manifest_hash: manifestHash,
       evidence_item_ids: ["upload-abc-123"],
+    });
+
+    await PublicMetadataDescriptor.create({
+      discovery_id: discoveryId,
+      reference: `https://api.knovara.test/api/v1/metadata/${discoveryId}/1.0.0`,
+      reference_hash: referenceHash,
+      canonical_descriptor_json: JSON.stringify({ title: "Novel CRISPR Vector" }),
+      sha256_digest: "d".repeat(64),
     });
 
     const mockTx = buildMockTxStatus({
