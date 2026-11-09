@@ -1,7 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Modal } from "../common/Modal.jsx";
 import { Button } from "../common/Button.jsx";
+import { TransactionReviewModal } from "../transaction/TransactionReviewModal.jsx";
 import { nearToYocto } from "../../services/formatters.js";
+import { useAuth } from "../../context/AuthContext.jsx";
 import { api } from "../../services/api.js";
 import { calculateSha256Hex } from "../../services/cryptoUtils.js";
 
@@ -16,14 +18,57 @@ export const SCOPES = [
 ];
 
 export function CreateOfferModal({ isOpen, onClose, discoveryId, onOfferPrepared }) {
+  const { user, isAuthenticated } = useAuth();
   const [offerId, setOfferId] = useState(`offer-${Date.now().toString(36)}`);
   const [scope, setScope] = useState("AiModelTraining");
   const [priceNear, setPriceNear] = useState("1.0");
   const [termsText, setTermsText] = useState("Standard KNOVARA AI Model Training and Research Evaluation License Terms v1.0");
   const [termsHash, setTermsHash] = useState("15709676c4926620c634fd990dd9e66cbdc39d8eb08a6b4a16f49a6501bcfe97");
   const [durationDays, setDurationDays] = useState(365);
+  const [storageData, setStorageData] = useState(null);
+  const [isCheckingStorage, setIsCheckingStorage] = useState(false);
+  const [storageModalIntent, setStorageModalIntent] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
+
+  useEffect(() => {
+    async function checkStorage() {
+      if (!isOpen) return;
+      try {
+        setIsCheckingStorage(true);
+        const res = await api.getAccountStorage();
+        setStorageData(res);
+      } catch (_err) {
+        // Ignored
+      } finally {
+        setIsCheckingStorage(false);
+      }
+    }
+    checkStorage();
+  }, [isOpen, isAuthenticated]);
+
+  const isRegistered = storageData?.isRegistered === true;
+  const availableStorageYocto = storageData?.storageBalance?.available || "0";
+  // Creating an offer deducts ~150-250 bytes (~0.0025 NEAR)
+  const hasEnoughStorage = isRegistered && BigInt(availableStorageYocto) >= BigInt("2500000000000000000000");
+
+  const handleDepositStorage = async () => {
+    try {
+      setIsSubmitting(true);
+      setError(null);
+      const amountYocto = nearToYocto("0.02");
+      const intent = await api.prepareTransactionIntent("storage-deposit", {
+        accountId: user?.accountId || null,
+        amountYocto,
+        registrationOnly: false,
+      });
+      setStorageModalIntent(intent);
+    } catch (err) {
+      setError(err.message || "Failed to prepare storage deposit intent");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleTermsTextChange = async (e) => {
     const text = e.target.value;
@@ -85,35 +130,76 @@ export function CreateOfferModal({ isOpen, onClose, discoveryId, onOfferPrepared
   };
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={`Create Licensing Offer — ${discoveryId}`}
-      footer={
-        <div style={{ display: "flex", gap: "10px" }}>
-          <Button variant="secondary" onClick={onClose} disabled={isSubmitting}>
-            Cancel
-          </Button>
-          <Button variant="primary" onClick={handleSubmit} isLoading={isSubmitting}>
-            Prepare Offer Intent
-          </Button>
-        </div>
-      }
-    >
-      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-        {error && <div className="knovara-alert knovara-alert-danger">{error}</div>}
+    <>
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+        title={`Create Licensing Offer — ${discoveryId}`}
+        footer={
+          <div style={{ display: "flex", gap: "10px" }}>
+            <Button variant="secondary" onClick={onClose} disabled={isSubmitting}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleSubmit}
+              disabled={storageData && !hasEnoughStorage}
+              isLoading={isSubmitting}
+            >
+              {storageData && !hasEnoughStorage ? "Storage Deposit Required First" : "Prepare Offer Intent"}
+            </Button>
+          </div>
+        }
+      >
+        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+          {error && <div className="knovara-alert knovara-alert-danger">{error}</div>}
 
-        <div>
-          <label style={{ display: "block", fontSize: "0.75rem", textTransform: "uppercase", marginBottom: "4px" }}>
-            Offer Identifier
-          </label>
-          <input
-            type="text"
-            value={offerId}
-            onChange={(e) => setOfferId(e.target.value)}
-            required
-          />
-        </div>
+          {/* Storage Alert */}
+          {storageData && !hasEnoughStorage && (
+            <div
+              className="knovara-alert knovara-alert-warning"
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "8px",
+                margin: 0,
+                border: "1px solid var(--knovara-border-strong)",
+              }}
+            >
+              <div style={{ fontWeight: 600 }}>
+                ⚠️ {!isRegistered ? "Smart Contract Storage Registration Required" : "Insufficient Available Storage Deposit"}
+              </div>
+              <div style={{ fontSize: "0.8125rem", color: "var(--knovara-text-secondary)", lineHeight: 1.4 }}>
+                {!isRegistered
+                  ? `The KNOVARA smart contract requires rights controller accounts (${user?.accountId || "connected wallet"}) to register a storage deposit to create offers.`
+                  : `Your account does not have enough available storage deposit to record a new license offer on-chain.`}
+                {" "}Please deposit refundable storage (recommended <strong>0.02 NEAR</strong>) to proceed.
+              </div>
+              <div>
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="sm"
+                  onClick={handleDepositStorage}
+                  isLoading={isSubmitting}
+                >
+                  {!isRegistered ? "Deposit Storage (0.02 NEAR) →" : "Top Up Storage (0.02 NEAR) →"}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          <div>
+            <label style={{ display: "block", fontSize: "0.75rem", textTransform: "uppercase", marginBottom: "4px" }}>
+              Offer Identifier
+            </label>
+            <input
+              type="text"
+              value={offerId}
+              onChange={(e) => setOfferId(e.target.value)}
+              required
+            />
+          </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
           <div>
@@ -181,6 +267,23 @@ export function CreateOfferModal({ isOpen, onClose, discoveryId, onOfferPrepared
         </div>
       </form>
     </Modal>
+
+    {/* Storage Review Modal */}
+    <TransactionReviewModal
+      isOpen={Boolean(storageModalIntent)}
+      onClose={() => setStorageModalIntent(null)}
+      intent={storageModalIntent}
+      title="Register Storage Balance"
+      explanation="Deposits 0.02 NEAR refundable storage deposit into the KNOVARA smart contract to register your account and hold offer records."
+      onReconcileSuccess={async () => {
+        setStorageModalIntent(null);
+        try {
+          const res = await api.getAccountStorage();
+          setStorageData(res);
+        } catch (_e) {}
+      }}
+    />
+  </>
   );
 }
 
