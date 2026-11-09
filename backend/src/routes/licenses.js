@@ -5,7 +5,7 @@ import { LicenseOfferProjection } from "../models/LicenseOfferProjection.js";
 import { LicenseRequestProjection } from "../models/LicenseRequestProjection.js";
 import { DiscoveryProjection } from "../models/DiscoveryProjection.js";
 import { EvidenceUpload } from "../models/EvidenceUpload.js";
-import { generatePresignedDownloadUrl } from "../services/r2Storage.js";
+import { generatePresignedDownloadUrl, getObjectStream } from "../services/r2Storage.js";
 import * as nearContract from "../services/nearContract.js";
 import { normalizeLicenseStatus } from "../services/syncService.js";
 
@@ -244,9 +244,10 @@ router.post("/:licenseId/files/:fileId/download-url", requireAuth, async (req, r
 
     // Step 5: Locate the evidence item
     let evidence;
+    const targetDiscoveryId = onChainRecord.discovery_id || onChainRecord.token_id || projection?.discovery_id;
     if (cleanFileId === "primary-evidence" || cleanFileId === "default" || cleanFileId === "primary") {
       evidence = await EvidenceUpload.findOne({
-        attached_discovery_id: onChainRecord.discovery_id,
+        attached_discovery_id: targetDiscoveryId,
         status: "ATTACHED",
       }).sort({ created_at: -1 });
     } else {
@@ -257,13 +258,13 @@ router.post("/:licenseId/files/:fileId/download-url", requireAuth, async (req, r
 
     if (!evidence) {
       return res.status(404).json({
-        error: `Evidence file '${cleanFileId}' was not found for licensed discovery '${onChainRecord.discovery_id}'`,
+        error: `Evidence file '${cleanFileId}' was not found for licensed discovery '${targetDiscoveryId}'`,
         code: "ERR_EVIDENCE_NOT_FOUND",
       });
     }
 
     // Step 6: Verify evidence is strictly ATTACHED and associated with the licensed discovery
-    if (evidence.status !== "ATTACHED" || evidence.attached_discovery_id !== onChainRecord.discovery_id) {
+    if (evidence.status !== "ATTACHED" || evidence.attached_discovery_id !== targetDiscoveryId) {
       return res.status(403).json({
         error: "Evidence file is not attached to this licensed discovery",
         code: "ERR_EVIDENCE_NOT_ATTACHED_OR_OUT_OF_SCOPE",
@@ -293,9 +294,91 @@ router.post("/:licenseId/files/:fileId/download-url", requireAuth, async (req, r
       filename: evidence.original_filename,
       downloadUrl: presignedUrl,
       presignedUrl,
+      directDownloadUrl: `/api/v1/licenses/${encodeURIComponent(cleanLicenseId)}/download`,
       sha256: evidence.sha256_digest,
       expiresAt: new Date(Date.now() + ttlSeconds * 1000).toISOString(),
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * GET /api/v1/licenses/:licenseId/download
+ * GET /api/v1/licenses/:licenseId/files/:fileId/download
+ * Direct streamed download for authorized licensees.
+ * Streams file bytes directly from Cloudflare R2 to bypass popup blockers and cross-origin restrictions.
+ */
+router.get(["/:licenseId/download", "/:licenseId/files/:fileId/download"], requireAuth, async (req, res, next) => {
+  try {
+    const { licenseId, fileId } = req.params;
+    const sessionAccountId = req.user.accountId;
+
+    const onChainRecord = await nearContract.getLicense(licenseId.trim());
+    if (!onChainRecord) {
+      return res.status(404).send("License not found on-chain");
+    }
+
+    const normalized = normalizeLicenseStatus(onChainRecord.status);
+    if (!normalized || normalized.status !== "Active") {
+      return res.status(403).send("License is not active on-chain");
+    }
+
+    if (normalized.expiresAt && normalized.expiresAt.getTime() <= Date.now()) {
+      return res.status(403).send("License has expired on-chain");
+    }
+
+    const projection = await LicenseRequestProjection.findOne({ request_id: licenseId.trim() });
+    let rightsControllerId = projection?.rights_controller_id || null;
+    if (!rightsControllerId) {
+      try {
+        const disc = await nearContract.getDiscovery(onChainRecord.token_id || onChainRecord.discovery_id);
+        rightsControllerId = disc?.rights_controller_id || null;
+      } catch (_e) {}
+    }
+
+    const isAuthorized =
+      onChainRecord.buyer_id === sessionAccountId ||
+      (rightsControllerId && rightsControllerId === sessionAccountId);
+
+    if (!isAuthorized) {
+      return res.status(403).send("Unauthorized to download files for this license");
+    }
+
+    let evidence;
+    const cleanFileId = (fileId || "primary-evidence").trim();
+    const targetDiscoveryId = onChainRecord.discovery_id || onChainRecord.token_id || projection?.discovery_id;
+    if (cleanFileId === "primary-evidence" || cleanFileId === "default" || cleanFileId === "primary") {
+      evidence = await EvidenceUpload.findOne({
+        attached_discovery_id: targetDiscoveryId,
+        status: "ATTACHED",
+      }).sort({ created_at: -1 });
+    } else {
+      evidence = await EvidenceUpload.findOne({ upload_id: cleanFileId });
+    }
+
+    if (!evidence) {
+      return res.status(404).send("Evidence file not found for licensed discovery");
+    }
+
+    const stream = await getObjectStream(config.R2_EVIDENCE_BUCKET, evidence.r2_object_key);
+    const safeFilename = (evidence.original_filename || "evidence.pdf").replace(/["\r\n]/g, "");
+    res.setHeader("Content-Type", evidence.verified_content_type || evidence.declared_content_type || "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${safeFilename}"`);
+    res.setHeader("Access-Control-Expose-Headers", "Content-Disposition");
+    if (evidence.actual_size) {
+      res.setHeader("Content-Length", evidence.actual_size);
+    }
+
+    stream.on("error", (streamErr) => {
+      if (!res.headersSent) {
+        next(streamErr);
+      } else {
+        res.end();
+      }
+    });
+
+    stream.pipe(res);
   } catch (err) {
     next(err);
   }

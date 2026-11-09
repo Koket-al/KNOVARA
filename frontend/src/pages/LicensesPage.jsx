@@ -30,6 +30,7 @@ export function LicensesPage({ onNavigate }) {
   // Download state
   const [downloadingFileId, setDownloadingFileId] = useState(null);
   const [downloadError, setDownloadError] = useState(null);
+  const [downloadSuccess, setDownloadSuccess] = useState(null);
 
   const fetchLicenseData = useCallback(async () => {
     if (!isAuthenticated) {
@@ -139,11 +140,32 @@ export function LicensesPage({ onNavigate }) {
     try {
       setDownloadingFileId(licenseId);
       setDownloadError(null);
+      setDownloadSuccess(null);
+
+      // 1. Try robust direct-stream download via blob (bypasses browser popup shields)
+      try {
+        const result = await api.downloadLicenseEvidence(licenseId, fileId);
+        setDownloadSuccess({ licenseId, filename: result.filename });
+        return;
+      } catch (streamErr) {
+        console.warn("[DOWNLOAD] Direct stream failed, attempting presigned fallback:", streamErr);
+      }
+
+      // 2. Fallback to presigned URL via non-popup anchor click
       const res = await api.getEvidenceDownloadUrl(licenseId, fileId || "primary-evidence");
       const targetUrl = res?.downloadUrl || res?.presignedUrl;
       if (targetUrl) {
-        // Open download link in new window or trigger download
-        window.open(targetUrl, "_blank");
+        const link = document.createElement("a");
+        link.href = targetUrl;
+        link.setAttribute("download", res?.filename || "evidence.pdf");
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        document.body.appendChild(link);
+        link.click();
+        setTimeout(() => {
+          if (document.body.contains(link)) document.body.removeChild(link);
+        }, 500);
+        setDownloadSuccess({ licenseId, filename: res?.filename || "evidence.pdf" });
       } else {
         throw new Error("No download URL returned by server");
       }
@@ -276,14 +298,38 @@ export function LicensesPage({ onNavigate }) {
                       )}
 
                       {isActive && (
-                        <Button
-                          variant="sky"
-                          size="sm"
-                          isLoading={downloadingFileId === req.request_id}
-                          onClick={() => handleDownloadFile(req.request_id, "primary-evidence")}
-                        >
-                          ⬇ Download Licensed Evidence
-                        </Button>
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "6px" }}>
+                          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                            <Button
+                              variant="sky"
+                              size="sm"
+                              isLoading={downloadingFileId === req.request_id}
+                              onClick={() => handleDownloadFile(req.request_id, "primary-evidence")}
+                            >
+                              ⬇ Download Licensed Evidence
+                            </Button>
+                            <a
+                              href={`/api/v1/licenses/${encodeURIComponent(req.request_id)}/download`}
+                              download
+                              className="knovara-btn knovara-btn-outline"
+                              style={{
+                                textDecoration: "none",
+                                fontSize: "0.75rem",
+                                padding: "4px 8px",
+                                display: "inline-flex",
+                                alignItems: "center",
+                              }}
+                              title="Direct browser stream download"
+                            >
+                              Direct Link
+                            </a>
+                          </div>
+                          {downloadSuccess && downloadSuccess.licenseId === req.request_id && (
+                            <span style={{ fontSize: "0.75rem", color: "#16a34a", fontWeight: 600 }}>
+                              ✓ {downloadSuccess.filename} downloaded successfully!
+                            </span>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>

@@ -143,8 +143,8 @@ export function RequestLicenseModal({ isOpen, onClose, offer, onRequestPrepared 
               {!user?.accountId
                 ? "Connect Wallet to Request"
                 : storageData && !hasEnoughStorage
-                ? "Deposit Storage (0.02 NEAR) First →"
-                : "Prepare Request Intent"}
+                  ? "Deposit Storage (0.02 NEAR) First →"
+                  : "Prepare Request Intent"}
             </Button>
           </div>
         }
@@ -282,7 +282,7 @@ export function RequestLicenseModal({ isOpen, onClose, offer, onRequestPrepared 
           try {
             const res = await api.getAccountStorage(user?.accountId || null);
             setStorageData(res);
-          } catch (_e) {}
+          } catch (_e) { }
         }}
       />
     </>

@@ -191,6 +191,54 @@ export const api = {
     });
   },
 
+  async downloadLicenseEvidence(licenseId, fileId = "primary-evidence") {
+    const cleanLicenseId = encodeURIComponent(licenseId);
+    const cleanFileId = encodeURIComponent(fileId);
+    const endpoint = fileId && fileId !== "primary-evidence"
+      ? `/api/v1/licenses/${cleanLicenseId}/files/${cleanFileId}/download`
+      : `/api/v1/licenses/${cleanLicenseId}/download`;
+
+    const res = await fetch(endpoint, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    if (!res.ok) {
+      let errMessage = "Download failed";
+      try {
+        const text = await res.text();
+        errMessage = text || `Download failed with HTTP ${res.status}`;
+      } catch (_e) {}
+      throw new Error(errMessage);
+    }
+
+    // Extract filename from Content-Disposition header if available
+    let filename = "evidence.pdf";
+    const disposition = res.headers.get("content-disposition");
+    if (disposition && disposition.includes("filename=")) {
+      const match = disposition.match(/filename\*?=(?:UTF-8'')?["']?([^"';]+)["']?/i);
+      if (match && match[1]) {
+        filename = decodeURIComponent(match[1]);
+      }
+    }
+
+    const blob = await res.blob();
+    const objectUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    setTimeout(() => {
+      if (document.body.contains(link)) {
+        document.body.removeChild(link);
+      }
+      window.URL.revokeObjectURL(objectUrl);
+    }, 1000);
+
+    return { success: true, filename };
+  },
+
   // ---------------------------------------------------------------------------
   // ACCOUNT & ROYALTIES APIs
   // ---------------------------------------------------------------------------
