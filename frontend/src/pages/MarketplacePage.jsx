@@ -10,13 +10,14 @@ import { yoctoToNear, truncateHash } from "../services/formatters.js";
 import { api } from "../services/api.js";
 
 const SCOPES = [
-  "",
-  "RESEARCH_ONLY",
-  "COMMERCIAL_USE",
-  "AI_TRAINING",
-  "EVALUATION_SAMPLE",
-  "EXCLUSIVE",
-  "PERPETUAL",
+  { value: "", label: "All Licensing Scopes" },
+  { value: "AiModelTraining", label: "AI Model Training" },
+  { value: "AiModelFineTuning", label: "AI Model Fine-Tuning" },
+  { value: "AiKnowledgeRetrieval", label: "AI Knowledge Retrieval (RAG)" },
+  { value: "AcademicResearch", label: "Academic & Research Evaluation" },
+  { value: "CommercialUse", label: "Commercial Production Use" },
+  { value: "ResearchEvaluation", label: "Evaluation & Feasibility Sample" },
+  { value: "CustomTerms", label: "Custom Negotiated Terms" },
 ];
 
 export function MarketplacePage({ onNavigate }) {
@@ -66,7 +67,15 @@ export function MarketplacePage({ onNavigate }) {
   }, []);
 
   const filteredOffers = allOffers.filter((o) => {
-    if (selectedScope && o.scope !== selectedScope) return false;
+    if (selectedScope) {
+      const match =
+        o.scope === selectedScope ||
+        (selectedScope === "AcademicResearch" && o.scope === "RESEARCH_ONLY") ||
+        (selectedScope === "CommercialUse" && (o.scope === "COMMERCIAL_USE" || o.scope === "EXCLUSIVE" || o.scope === "PERPETUAL")) ||
+        (selectedScope === "AiModelTraining" && o.scope === "AI_TRAINING") ||
+        (selectedScope === "ResearchEvaluation" && o.scope === "EVALUATION_SAMPLE");
+      if (!match) return false;
+    }
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       return (
@@ -110,9 +119,8 @@ export function MarketplacePage({ onNavigate }) {
         />
 
         <select value={selectedScope} onChange={(e) => setSelectedScope(e.target.value)}>
-          <option value="">All Licensing Scopes</option>
-          {SCOPES.filter(Boolean).map((s) => (
-            <option key={s} value={s}>{s}</option>
+          {SCOPES.map((s) => (
+            <option key={s.value} value={s.value}>{s.label}</option>
           ))}
         </select>
       </div>

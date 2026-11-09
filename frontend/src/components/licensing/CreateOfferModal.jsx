@@ -3,31 +3,64 @@ import { Modal } from "../common/Modal.jsx";
 import { Button } from "../common/Button.jsx";
 import { nearToYocto } from "../../services/formatters.js";
 import { api } from "../../services/api.js";
+import { calculateSha256Hex } from "../../services/cryptoUtils.js";
 
-const SCOPES = [
-  "RESEARCH_ONLY",
-  "COMMERCIAL_USE",
-  "AI_TRAINING",
-  "EVALUATION_SAMPLE",
-  "EXCLUSIVE",
-  "PERPETUAL",
+export const SCOPES = [
+  { value: "AiModelTraining", label: "AI Model Training (Pre-training)" },
+  { value: "AiModelFineTuning", label: "AI Model Fine-Tuning" },
+  { value: "AiKnowledgeRetrieval", label: "AI RAG & Knowledge Retrieval" },
+  { value: "AcademicResearch", label: "Academic & Research Evaluation" },
+  { value: "CommercialUse", label: "Commercial Production Use" },
+  { value: "ResearchEvaluation", label: "Evaluation & Feasibility Sample" },
+  { value: "CustomTerms", label: "Custom Negotiated Terms" },
 ];
 
 export function CreateOfferModal({ isOpen, onClose, discoveryId, onOfferPrepared }) {
   const [offerId, setOfferId] = useState(`offer-${Date.now().toString(36)}`);
-  const [scope, setScope] = useState("RESEARCH_ONLY");
+  const [scope, setScope] = useState("AiModelTraining");
   const [priceNear, setPriceNear] = useState("1.0");
-  const [termsText, setTermsText] = useState("Standard KNOVARA Academic and Research Evaluation License Terms v1.0");
-  const [termsHash, setTermsHash] = useState("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef");
+  const [termsText, setTermsText] = useState("Standard KNOVARA AI Model Training and Research Evaluation License Terms v1.0");
+  const [termsHash, setTermsHash] = useState("15709676c4926620c634fd990dd9e66cbdc39d8eb08a6b4a16f49a6501bcfe97");
   const [durationDays, setDurationDays] = useState(365);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
+
+  const handleTermsTextChange = async (e) => {
+    const text = e.target.value;
+    setTermsText(text);
+    if (!text.trim()) return;
+    try {
+      const bytes = new TextEncoder().encode(text);
+      const hash = await calculateSha256Hex(bytes);
+      setTermsHash(hash);
+    } catch (_err) {
+      // ignore
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       setIsSubmitting(true);
       setError(null);
+
+      if (!offerId.trim()) {
+        throw new Error("Offer ID is required");
+      }
+      if (offerId.trim().length > 64) {
+        throw new Error("Offer ID must be at most 64 characters");
+      }
+      if (!priceNear || isNaN(Number(priceNear)) || Number(priceNear) < 0) {
+        throw new Error("Price must be a valid non-negative number");
+      }
+      const days = Number(durationDays);
+      if (isNaN(days) || days < 1 || days > 365) {
+        throw new Error("Duration must be between 1 and 365 days (max 365 allowed by contract)");
+      }
+      const cleanHash = termsHash.trim().toLowerCase();
+      if (!/^[0-9a-f]{64}$/.test(cleanHash)) {
+        throw new Error("Terms hash must be a 64-character lowercase hexadecimal string (SHA-256)");
+      }
 
       const priceYocto = nearToYocto(priceNear);
 
@@ -36,8 +69,8 @@ export function CreateOfferModal({ isOpen, onClose, discoveryId, onOfferPrepared
         discoveryId: discoveryId.trim(),
         scope,
         priceYocto,
-        termsHash: termsHash.trim().toLowerCase(),
-        durationDays: Number(durationDays),
+        termsHash: cleanHash,
+        durationDays: days,
       });
 
       if (onOfferPrepared) {
@@ -89,7 +122,7 @@ export function CreateOfferModal({ isOpen, onClose, discoveryId, onOfferPrepared
             </label>
             <select value={scope} onChange={(e) => setScope(e.target.value)}>
               {SCOPES.map((s) => (
-                <option key={s} value={s}>{s}</option>
+                <option key={s.value} value={s.value}>{s.label}</option>
               ))}
             </select>
           </div>
@@ -109,13 +142,13 @@ export function CreateOfferModal({ isOpen, onClose, discoveryId, onOfferPrepared
 
         <div>
           <label style={{ display: "block", fontSize: "0.75rem", textTransform: "uppercase", marginBottom: "4px" }}>
-            Duration (Days)
+            Duration (Days, max 365)
           </label>
           <input
             type="number"
             value={durationDays}
             min={1}
-            max={3650}
+            max={365}
             onChange={(e) => setDurationDays(e.target.value)}
             required
           />
@@ -123,12 +156,12 @@ export function CreateOfferModal({ isOpen, onClose, discoveryId, onOfferPrepared
 
         <div>
           <label style={{ display: "block", fontSize: "0.75rem", textTransform: "uppercase", marginBottom: "4px" }}>
-            Terms Description
+            Terms Description (Cryptographically Hashes to Terms Hash)
           </label>
           <textarea
             rows={2}
             value={termsText}
-            onChange={(e) => setTermsText(e.target.value)}
+            onChange={handleTermsTextChange}
           />
         </div>
 

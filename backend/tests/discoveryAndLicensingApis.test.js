@@ -484,6 +484,19 @@ describe("Discovery & Licensing Application APIs", () => {
       assert.equal(res.body.attachedDeposit, "0");
       assert.equal(res.body.args.offer_id, "offer-intent-1");
       assert.equal(res.body.args.price_yocto, "5000000000000000000000000");
+      assert.equal(res.body.args.scope, "CommercialUse");
+
+      const aiPayload = {
+        offerId: "offer-intent-ai",
+        discoveryId: "disc-detail-101",
+        scope: "AI_TRAINING",
+        priceYocto: "1000000000000000000000000",
+        termsHash: "4".repeat(64),
+        durationDays: 180,
+      };
+      const aiRes = await aliceAgent.post("/api/v1/transactions/intents/create-offer").send(aiPayload);
+      assert.equal(aiRes.status, 200);
+      assert.equal(aiRes.body.args.scope, "AiModelTraining");
     });
 
     it("13. POST /api/v1/transactions/intents/pay-license authoritatively matches on-chain price as attached deposit", async () => {

@@ -66,6 +66,38 @@ export function prepareRegisterDiscoveryIntent(params) {
   });
 }
 
+const CANONICAL_SCOPES = {
+  academicresearch: "AcademicResearch",
+  commercialuse: "CommercialUse",
+  aimodeltraining: "AiModelTraining",
+  aimodelfinetuning: "AiModelFineTuning",
+  aiknowledgeretrieval: "AiKnowledgeRetrieval",
+  researchevaluation: "ResearchEvaluation",
+  customterms: "CustomTerms",
+  research_only: "AcademicResearch",
+  academic_noncommercial: "AcademicResearch",
+  academic: "AcademicResearch",
+  commercial_use: "CommercialUse",
+  commercial_exclusive: "CommercialUse",
+  commercial: "CommercialUse",
+  ai_training: "AiModelTraining",
+  ai_model_training: "AiModelTraining",
+  ai_model_fine_tuning: "AiModelFineTuning",
+  ai_knowledge_retrieval: "AiKnowledgeRetrieval",
+  evaluation_sample: "ResearchEvaluation",
+  research_evaluation: "ResearchEvaluation",
+  custom_terms: "CustomTerms",
+  exclusive: "CommercialUse",
+  perpetual: "CommercialUse",
+};
+
+export function normalizeLicenseScope(scope) {
+  if (!scope || typeof scope !== "string") return "AcademicResearch";
+  const clean = scope.trim();
+  const normalized = CANONICAL_SCOPES[clean.toLowerCase()];
+  return normalized || clean;
+}
+
 /**
  * Prepares intent for `create_license_offer`.
  */
@@ -84,7 +116,7 @@ export function prepareCreateOfferIntent(params) {
     args: {
       offer_id: offerId,
       discovery_id: discoveryId,
-      scope,
+      scope: normalizeLicenseScope(scope),
       price_yocto: String(priceYocto),
       terms_hash: termsHash,
       duration_days: Number(durationDays),
