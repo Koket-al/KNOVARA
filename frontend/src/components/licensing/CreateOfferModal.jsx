@@ -129,6 +129,15 @@ export function CreateOfferModal({ isOpen, onClose, discoveryId, onOfferPrepared
     }
   };
 
+  const handlePrimaryAction = async (e) => {
+    e?.preventDefault();
+    if (storageData && !hasEnoughStorage) {
+      await handleDepositStorage();
+      return;
+    }
+    await handleSubmit(e);
+  };
+
   return (
     <>
       <Modal
@@ -142,11 +151,10 @@ export function CreateOfferModal({ isOpen, onClose, discoveryId, onOfferPrepared
             </Button>
             <Button
               variant="primary"
-              onClick={handleSubmit}
-              disabled={storageData && !hasEnoughStorage}
+              onClick={handlePrimaryAction}
               isLoading={isSubmitting}
             >
-              {storageData && !hasEnoughStorage ? "Storage Deposit Required First" : "Prepare Offer Intent"}
+              {storageData && !hasEnoughStorage ? "Deposit Storage (0.02 NEAR) First →" : "Prepare Offer Intent"}
             </Button>
           </div>
         }

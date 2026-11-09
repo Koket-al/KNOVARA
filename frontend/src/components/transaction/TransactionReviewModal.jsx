@@ -36,6 +36,11 @@ export function TransactionReviewModal({
   const gasTgas = formatGasToTgas(intent.gas || "30000000000000");
 
   const handleSignAndBroadcast = async () => {
+    if (!confirmed) {
+      setReconcileError("Please check the 'Verification Confirmation' box above to verify parameters before wallet signing.");
+      return;
+    }
+
     try {
       setIsBroadcasting(true);
       setReconcileError(null);
@@ -215,7 +220,7 @@ export function TransactionReviewModal({
           <Button
             variant="primary"
             size="lg"
-            disabled={!confirmed || isBroadcasting || isReconciling}
+            disabled={isBroadcasting || isReconciling}
             isLoading={isBroadcasting || isReconciling}
             onClick={handleSignAndBroadcast}
             style={{ width: "100%", justifyContent: "center" }}
@@ -230,6 +235,12 @@ export function TransactionReviewModal({
             Prompts your connected wallet (Meteor, MyNearWallet, etc.) to approve the transaction.
           </div>
         </div>
+
+        {reconcileError && (
+          <div className="knovara-alert knovara-alert-danger" style={{ margin: 0 }}>
+            {reconcileError}
+          </div>
+        )}
 
         {/* Manual Reconciliation Section (Fallback) */}
         <div style={{ borderTop: "1px solid var(--knovara-border)", paddingTop: "16px" }}>

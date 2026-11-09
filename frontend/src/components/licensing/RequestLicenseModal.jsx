@@ -26,16 +26,16 @@ export function RequestLicenseModal({ isOpen, onClose, offer, onRequestPrepared 
       if (!isOpen) return;
       try {
         setIsCheckingStorage(true);
-        const res = await api.getAccountStorage();
+        const res = await api.getAccountStorage(user?.accountId || null);
         setStorageData(res);
       } catch (_err) {
-        // Ignored, user might be unauthenticated or RPC lag
+        // Ignored, fallback to client intent
       } finally {
         setIsCheckingStorage(false);
       }
     }
     checkStorage();
-  }, [isOpen, isAuthenticated]);
+  }, [isOpen, user?.accountId]);
 
   const isRegistered = storageData?.isRegistered === true;
   const availableStorageYocto = storageData?.storageBalance?.available || "0";
@@ -60,10 +60,28 @@ export function RequestLicenseModal({ isOpen, onClose, offer, onRequestPrepared 
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handlePrimaryAction = async (e) => {
+    e?.preventDefault();
+    setError(null);
+
+    // If storage is not registered, guide user directly to storage deposit
+    if (storageData && !hasEnoughStorage) {
+      await handleDepositStorage();
+      return;
+    }
+
     if (!acceptedTerms) {
-      setError("You must accept the terms binding to submit a license request");
+      setError("Please check the box below to accept the terms binding before submitting a license request.");
+      return;
+    }
+
+    await handleSubmit(e);
+  };
+
+  const handleSubmit = async (e) => {
+    e?.preventDefault();
+    if (!acceptedTerms) {
+      setError("Please check the box below to accept the terms binding before submitting a license request.");
       return;
     }
 
@@ -101,11 +119,10 @@ export function RequestLicenseModal({ isOpen, onClose, offer, onRequestPrepared 
             </Button>
             <Button
               variant="primary"
-              onClick={handleSubmit}
-              disabled={!acceptedTerms || (storageData && !hasEnoughStorage)}
+              onClick={handlePrimaryAction}
               isLoading={isSubmitting}
             >
-              {storageData && !hasEnoughStorage ? "Storage Deposit Required First" : "Prepare Request Intent"}
+              {storageData && !hasEnoughStorage ? "Deposit Storage (0.02 NEAR) First →" : "Prepare Request Intent"}
             </Button>
           </div>
         }

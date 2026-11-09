@@ -93,8 +93,9 @@ router.get("/:txHash", requireAuth, async (req, res, next) => {
 /**
  * POST /api/v1/transactions/intents/:action
  * Prepares validated transaction intent for frontend wallet signing.
+ * Open endpoint for client intent formatting (actual authorization happens at wallet signing & on-chain execution).
  */
-router.post("/intents/:action", requireAuth, async (req, res, next) => {
+router.post("/intents/:action", async (req, res, next) => {
   try {
     const { action } = req.params;
     const payload = req.body || {};

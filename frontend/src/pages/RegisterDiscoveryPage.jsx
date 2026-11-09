@@ -127,6 +127,11 @@ export function RegisterDiscoveryPage({ onNavigate }) {
       return;
     }
 
+    if (storageData && !hasEnoughAvailable) {
+      await handleQuickStorageDeposit();
+      return;
+    }
+
     if (totalBps !== 10000) {
       setPrepError(`Beneficiary splits must sum to exactly 10,000 basis points (current sum: ${totalBps})`);
       return;
@@ -430,11 +435,11 @@ export function RegisterDiscoveryPage({ onNavigate }) {
             type="submit"
             variant="primary"
             size="lg"
-            disabled={!isAuthenticated || (storageData && !hasEnoughAvailable) || totalBps !== 10000 || verifiedUploads.length === 0 || isPreparing}
+            disabled={!isAuthenticated || isPreparing}
             isLoading={isPreparing}
           >
             {storageData && !hasEnoughAvailable
-              ? "Storage Top-Up Required First"
+              ? "Deposit Storage (0.05 NEAR) First \u2192"
               : "Review & Prepare On-Chain Registration \u2192"}
           </Button>
         </div>

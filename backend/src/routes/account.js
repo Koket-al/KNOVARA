@@ -137,18 +137,31 @@ router.get("/royalties", requireAuth, async (req, res, next) => {
 /**
  * GET /api/v1/account/storage
  * Retrieves authoritative NEP-145 storage balance for the account.
+ * Supports authenticated sessions or public query parameter ?accountId=<accountId>.
  */
-router.get("/storage", requireAuth, async (req, res, next) => {
+router.get("/storage", (req, res, next) => {
+  if (req.query.accountId) {
+    return next();
+  }
+  return requireAuth(req, res, next);
+}, async (req, res, next) => {
   try {
-    const sessionAccountId = req.user.accountId;
+    const targetAccountId = req.query.accountId || req.user?.accountId;
+
+    if (!targetAccountId) {
+      return res.status(401).json({
+        error: "Authentication required or accountId parameter must be provided",
+        code: "ERR_UNAUTHENTICATED",
+      });
+    }
 
     const [storageBalance, bounds] = await Promise.all([
-      nearContract.getStorageBalanceOf(sessionAccountId),
+      nearContract.getStorageBalanceOf(targetAccountId),
       nearContract.getStorageBalanceBounds(),
     ]);
 
     return res.status(200).json({
-      accountId: sessionAccountId,
+      accountId: targetAccountId,
       storageBalance: storageBalance || null,
       bounds: bounds || null,
       isRegistered: Boolean(storageBalance),

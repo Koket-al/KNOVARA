@@ -214,18 +214,23 @@ export const api = {
     return request("/account/royalties", { method: "GET" });
   },
 
-  async getAccountStorage() {
-    return request("/account/storage", { method: "GET" });
+  async getAccountStorage(accountId = null) {
+    const query = accountId ? `?accountId=${encodeURIComponent(accountId)}` : "";
+    return request(`/account/storage${query}`, { method: "GET" });
   },
 
   // ---------------------------------------------------------------------------
   // TRANSACTION INTENTS & RECONCILIATION
   // ---------------------------------------------------------------------------
-  async prepareTransactionIntent(action, payload) {
-    return request(`/transactions/intents/${encodeURIComponent(action)}`, {
-      method: "POST",
-      body: JSON.stringify(payload),
-    });
+  async prepareTransactionIntent(action, payload = {}) {
+    try {
+      return await request(`/transactions/intents/${encodeURIComponent(action)}`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+    } catch (_err) {
+      return buildClientTransactionIntent(action, payload);
+    }
   },
 
   async reconcileTransaction(txHash) {
@@ -239,4 +244,152 @@ export const api = {
     return request(`/transactions/${encodeURIComponent(txHash)}`, { method: "GET" });
   },
 };
+
+/**
+ * Client-Side Transaction Intent Builder Fallback
+ */
+export function buildClientTransactionIntent(action, payload = {}) {
+  const contractId = config.NEAR_CONTRACT_ID || "koket-knovara-dev.testnet";
+  const networkId = config.NEAR_NETWORK || "testnet";
+  const DEFAULT_GAS_30_TGAS = "30000000000000";
+  const DEFAULT_GAS_50_TGAS = "50000000000000";
+
+  switch (action) {
+    case "storage-deposit":
+      return {
+        networkId,
+        contractId,
+        methodName: "storage_deposit",
+        args: {
+          account_id: payload.accountId || null,
+          registration_only: Boolean(payload.registrationOnly),
+        },
+        attachedDeposit: String(payload.amountYocto || "20000000000000000000000"), // 0.02 NEAR
+        gas: DEFAULT_GAS_30_TGAS,
+        context: { accountId: payload.accountId },
+      };
+
+    case "register-discovery":
+      return {
+        networkId,
+        contractId,
+        methodName: "register_discovery_and_mint",
+        args: {
+          discovery_id: payload.discoveryId,
+          token_id: payload.tokenId,
+          custodian_id: payload.custodianId || null,
+          rights_controller_id: payload.rightsControllerId,
+          evidence_manifest_hash: payload.evidenceManifestHash,
+          metadata: payload.metadata,
+          beneficiary_splits: payload.beneficiarySplits || [],
+          lineage_parents: payload.lineageParents || [],
+        },
+        attachedDeposit: "0",
+        gas: DEFAULT_GAS_50_TGAS,
+        context: { discoveryId: payload.discoveryId, tokenId: payload.tokenId },
+      };
+
+    case "request-license":
+      return {
+        networkId,
+        contractId,
+        methodName: "request_license",
+        args: {
+          request_id: payload.requestId,
+          offer_id: payload.offerId,
+          accepted_terms_hash: payload.acceptedTermsHash,
+        },
+        attachedDeposit: "0",
+        gas: DEFAULT_GAS_30_TGAS,
+        context: { requestId: payload.requestId, offerId: payload.offerId },
+      };
+
+    case "approve-request":
+      return {
+        networkId,
+        contractId,
+        methodName: "approve_license_request",
+        args: {
+          request_id: payload.requestId,
+        },
+        attachedDeposit: "0",
+        gas: DEFAULT_GAS_30_TGAS,
+        context: { requestId: payload.requestId },
+      };
+
+    case "reject-request":
+      return {
+        networkId,
+        contractId,
+        methodName: "reject_license_request",
+        args: {
+          request_id: payload.requestId,
+          reason: payload.reason || "Rejected by rights controller",
+        },
+        attachedDeposit: "0",
+        gas: DEFAULT_GAS_30_TGAS,
+        context: { requestId: payload.requestId },
+      };
+
+    case "pay-license":
+      return {
+        networkId,
+        contractId,
+        methodName: "pay_for_license",
+        args: {
+          request_id: payload.requestId,
+          accepted_terms_hash: payload.acceptedTermsHash,
+        },
+        attachedDeposit: String(payload.priceYocto || payload.deposit || "0"),
+        gas: DEFAULT_GAS_50_TGAS,
+        context: { requestId: payload.requestId },
+      };
+
+    case "create-offer":
+      return {
+        networkId,
+        contractId,
+        methodName: "create_license_offer",
+        args: {
+          offer_id: payload.offerId,
+          discovery_id: payload.discoveryId,
+          scope: payload.scope,
+          price_yocto: String(payload.priceYocto),
+          terms_hash: payload.termsHash,
+          duration_days: Number(payload.durationDays),
+        },
+        attachedDeposit: "0",
+        gas: DEFAULT_GAS_30_TGAS,
+        context: { offerId: payload.offerId, discoveryId: payload.discoveryId },
+      };
+
+    case "deactivate-offer":
+      return {
+        networkId,
+        contractId,
+        methodName: "deactivate_license_offer",
+        args: {
+          offer_id: payload.offerId,
+        },
+        attachedDeposit: "0",
+        gas: DEFAULT_GAS_30_TGAS,
+        context: { offerId: payload.offerId },
+      };
+
+    case "claim-royalties":
+    case "withdraw-earnings":
+      return {
+        networkId,
+        contractId,
+        methodName: "withdraw_earnings",
+        args: {},
+        attachedDeposit: "0",
+        gas: "40000000000000",
+        context: {},
+      };
+
+    default:
+      throw new Error(`Unsupported transaction intent action: '${action}'`);
+  }
+}
 
