@@ -26,7 +26,7 @@ export function Header({ currentPath = "/", onNavigate }) {
     }
   };
 
-  const navLinks = [
+  const unauthNavLinks = [
     { label: "Discoveries", path: "/discoveries" },
     { label: "Marketplace", path: "/marketplace" },
     { label: "Register Discovery", path: "/register" },
@@ -34,10 +34,15 @@ export function Header({ currentPath = "/", onNavigate }) {
 
   const authNavLinks = [
     { label: "Dashboard", path: "/dashboard" },
+    { label: "Discoveries", path: "/discoveries" },
+    { label: "Marketplace", path: "/marketplace" },
     { label: "My Discoveries", path: "/my-discoveries" },
+    { label: "Register Discovery", path: "/register" },
     { label: "Licenses", path: "/licenses" },
     { label: "Account & Storage", path: "/account" },
   ];
+
+  const activeNavLinks = isAuthenticated ? authNavLinks : unauthNavLinks;
 
   return (
     <header
@@ -51,11 +56,20 @@ export function Header({ currentPath = "/", onNavigate }) {
       }}
     >
       <div
-        className="knovara-container flex-between"
-        style={{ height: "var(--header-height)", padding: "0 20px" }}
+        style={{
+          width: "100%",
+          maxWidth: "1440px",
+          margin: "0 auto",
+          height: "var(--header-height)",
+          padding: "0 28px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "20px",
+        }}
       >
         {/* Brand */}
-        <div style={{ display: "flex", alignItems: "baseline", gap: "10px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexShrink: 0 }}>
           <a
             href="/"
             onClick={(e) => {
@@ -71,6 +85,7 @@ export function Header({ currentPath = "/", onNavigate }) {
                 fontWeight: 900,
                 color: "var(--knovara-blue-primary)",
                 letterSpacing: "-0.03em",
+                whiteSpace: "nowrap",
               }}
             >
               KNOVARA
@@ -83,7 +98,10 @@ export function Header({ currentPath = "/", onNavigate }) {
               textTransform: "uppercase",
               letterSpacing: "0.08em",
               color: "var(--knovara-text-muted)",
-              display: "none",
+              whiteSpace: "nowrap",
+              borderLeft: "1px solid var(--knovara-border-strong)",
+              paddingLeft: "10px",
+              marginLeft: "4px",
             }}
             className="brand-subtitle"
           >
@@ -96,11 +114,12 @@ export function Header({ currentPath = "/", onNavigate }) {
           style={{
             display: "flex",
             alignItems: "center",
-            gap: "20px",
+            gap: "24px",
+            flexShrink: 0,
           }}
           className="desktop-nav"
         >
-          {navLinks.map((link) => (
+          {activeNavLinks.map((link) => (
             <a
               key={link.path}
               href={link.path}
@@ -114,49 +133,31 @@ export function Header({ currentPath = "/", onNavigate }) {
                 fontWeight: 600,
                 textTransform: "uppercase",
                 letterSpacing: "0.03em",
+                whiteSpace: "nowrap",
+                flexShrink: 0,
                 color: currentPath === link.path ? "var(--knovara-blue-primary)" : "var(--knovara-text-secondary)",
                 borderBottom: currentPath === link.path ? "2px solid var(--knovara-blue-primary)" : "2px solid transparent",
-                padding: "8px 0",
+                padding: "8px 2px",
+                textDecoration: "none",
+                transition: "color 0.15s ease, border-color 0.15s ease",
               }}
             >
               {link.label}
             </a>
           ))}
-
-          {isAuthenticated &&
-            authNavLinks.map((link) => (
-              <a
-                key={link.path}
-                href={link.path}
-                onClick={(e) => {
-                  e.preventDefault();
-                  onNavigate(link.path);
-                }}
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "0.8125rem",
-                  fontWeight: 600,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.03em",
-                  color: currentPath === link.path ? "var(--knovara-blue-primary)" : "var(--knovara-text-secondary)",
-                  borderBottom: currentPath === link.path ? "2px solid var(--knovara-blue-primary)" : "2px solid transparent",
-                  padding: "8px 0",
-                }}
-              >
-                {link.label}
-              </a>
-            ))}
         </nav>
 
         {/* Authentication & Account CTA */}
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", flexShrink: 0 }}>
           {isAuthenticated && user ? (
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <Badge variant="blue" style={{ fontSize: "0.8125rem", padding: "6px 10px" }}>
-                <span style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: "var(--knovara-status-success)", display: "inline-block" }} />
-                <span>{user.accountId}</span>
+              <Badge variant="blue" style={{ fontSize: "0.8125rem", padding: "6px 10px", whiteSpace: "nowrap", flexShrink: 0, display: "flex", alignItems: "center", gap: "6px" }}>
+                <span style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: "var(--knovara-status-success)", display: "inline-block", flexShrink: 0 }} />
+                <span style={{ maxWidth: "180px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "inline-block" }} title={user.accountId}>
+                  {user.accountId}
+                </span>
               </Badge>
-              <Button variant="outline" size="sm" onClick={logout}>
+              <Button variant="outline" size="sm" onClick={logout} style={{ whiteSpace: "nowrap", flexShrink: 0 }}>
                 Disconnect
               </Button>
             </div>
@@ -204,7 +205,7 @@ export function Header({ currentPath = "/", onNavigate }) {
             gap: "12px",
           }}
         >
-          {[...navLinks, ...(isAuthenticated ? authNavLinks : [])].map((link) => (
+          {activeNavLinks.map((link) => (
             <a
               key={link.path}
               href={link.path}
@@ -217,7 +218,8 @@ export function Header({ currentPath = "/", onNavigate }) {
                 fontFamily: "var(--font-mono)",
                 fontSize: "0.875rem",
                 color: currentPath === link.path ? "var(--knovara-blue-primary)" : "var(--knovara-text-primary)",
-                padding: "6px 0",
+                padding: "8px 0",
+                textDecoration: "none",
               }}
             >
               {link.label}
@@ -276,12 +278,16 @@ export function Header({ currentPath = "/", onNavigate }) {
       </Modal>
 
       <style>{`
-        @media (max-width: 860px) {
+        .brand-subtitle { display: none; }
+        @media (min-width: 1320px) {
+          .brand-subtitle { display: inline-block !important; }
+        }
+        @media (max-width: 1080px) {
           .desktop-nav { display: none !important; }
           .mobile-menu-btn { display: block !important; }
         }
-        @media (min-width: 600px) {
-          .brand-subtitle { display: inline-block !important; }
+        .desktop-nav a:hover {
+          color: var(--knovara-blue-primary) !important;
         }
       `}</style>
     </header>
