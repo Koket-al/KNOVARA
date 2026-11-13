@@ -150,9 +150,9 @@ export function MarketplacePage({ onNavigate }) {
               fontWeight: 700,
               fontFamily: "var(--font-mono)",
               cursor: "pointer",
-              background: activeMarketTab === "api-products" ? "var(--knovara-lime)" : "transparent",
-              color: activeMarketTab === "api-products" ? "#18181B" : "var(--knovara-text-secondary)",
-              boxShadow: activeMarketTab === "api-products" ? "0 0 14px rgba(198, 244, 50, 0.7)" : "none",
+              background: activeMarketTab === "api-products" ? "var(--knovara-blue-primary)" : "transparent",
+              color: activeMarketTab === "api-products" ? "#FFFFFF" : "var(--knovara-text-secondary)",
+              boxShadow: activeMarketTab === "api-products" ? "0 0 14px rgba(33, 150, 243, 0.6)" : "none",
               transition: "all 0.15s ease",
             }}
           >
@@ -169,9 +169,9 @@ export function MarketplacePage({ onNavigate }) {
               fontWeight: 700,
               fontFamily: "var(--font-mono)",
               cursor: "pointer",
-              background: activeMarketTab === "offers" ? "var(--knovara-lime)" : "transparent",
-              color: activeMarketTab === "offers" ? "#18181B" : "var(--knovara-text-secondary)",
-              boxShadow: activeMarketTab === "offers" ? "0 0 14px rgba(198, 244, 50, 0.7)" : "none",
+              background: activeMarketTab === "offers" ? "var(--knovara-blue-primary)" : "transparent",
+              color: activeMarketTab === "offers" ? "#FFFFFF" : "var(--knovara-text-secondary)",
+              boxShadow: activeMarketTab === "offers" ? "0 0 14px rgba(33, 150, 243, 0.6)" : "none",
               transition: "all 0.15s ease",
             }}
           >

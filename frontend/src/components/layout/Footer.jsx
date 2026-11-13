@@ -6,7 +6,7 @@ export function Footer() {
   return (
     <footer
       style={{
-        backgroundColor: "rgba(213, 206, 162, 0.96)",
+        backgroundColor: "rgba(228, 242, 253, 0.96)",
         borderTop: "1px solid var(--knovara-border)",
         marginTop: "80px",
         padding: "48px 0 36px 0",
@@ -27,7 +27,7 @@ export function Footer() {
         >
           <div>
             <div style={{ fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: "1.15rem", color: "var(--knovara-text-primary)" }}>
-              KNOVARA<span style={{ color: "var(--knovara-lime)", textShadow: "0 0 10px #C6F432" }}>.</span>
+              KNOVARA<span style={{ color: "var(--knovara-blue-primary)", textShadow: "0 0 10px #2196F3" }}>.</span>
             </div>
             <div style={{ fontSize: "0.8125rem", color: "var(--knovara-text-secondary)", marginTop: "4px" }}>
               Permanent cryptographic priority and decentralized licensing on NEAR.

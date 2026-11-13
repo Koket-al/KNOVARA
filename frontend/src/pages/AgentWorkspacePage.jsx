@@ -240,7 +240,7 @@ export function AgentWorkspacePage({ onNavigate }) {
     <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "24px 16px" }}>
       <div style={{ marginBottom: "32px" }}>
         <h1 style={{ fontSize: "2.25rem", fontWeight: 900, color: "var(--knovara-text-primary)", marginBottom: "8px" }}>
-          AI Agent Task Workspace<span style={{ color: "var(--knovara-lime)" }}>.</span>
+          AI Agent Task Workspace<span style={{ color: "var(--knovara-blue-primary)" }}>.</span>
         </h1>
         <p style={{ color: "var(--knovara-text-secondary)", fontSize: "1.0625rem" }}>
           Autonomous technology licensing runtime. Agents discover APIs, prepare intents, and request human owner signing.
@@ -252,9 +252,9 @@ export function AgentWorkspacePage({ onNavigate }) {
       {statusMsg && (
         <div
           style={{
-            backgroundColor: "rgba(198, 244, 50, 0.12)",
-            border: "1px solid var(--knovara-border-lime)",
-            color: "var(--knovara-lime)",
+            backgroundColor: "rgba(33, 150, 243, 0.12)",
+            border: "1px solid var(--knovara-border)",
+            color: "var(--knovara-text-primary)",
             padding: "16px 20px",
             borderRadius: "var(--radius-md)",
             marginBottom: "24px",

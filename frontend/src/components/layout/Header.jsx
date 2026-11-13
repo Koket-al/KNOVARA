@@ -48,7 +48,7 @@ export function Header({ currentPath = "/", onNavigate }) {
   return (
     <header
       style={{
-        backgroundColor: "rgba(213, 206, 162, 0.92)",
+        backgroundColor: "rgba(228, 242, 253, 0.92)",
         backdropFilter: "blur(14px)",
         borderBottom: "1px solid var(--knovara-border)",
         position: "sticky",
@@ -90,7 +90,7 @@ export function Header({ currentPath = "/", onNavigate }) {
                 whiteSpace: "nowrap",
               }}
             >
-              KNOVARA<span style={{ color: "var(--knovara-lime)", textShadow: "0 0 10px #C6F432" }}>.</span>
+              KNOVARA<span style={{ color: "var(--knovara-blue-primary)", textShadow: "0 0 10px #2196F3" }}>.</span>
             </span>
           </a>
           <span
@@ -137,12 +137,12 @@ export function Header({ currentPath = "/", onNavigate }) {
                 letterSpacing: "0.03em",
                 whiteSpace: "nowrap",
                 flexShrink: 0,
-                color: currentPath === link.path ? "#18181B" : "var(--knovara-text-secondary)",
-                borderBottom: currentPath === link.path ? "2px solid #18181B" : "2px solid transparent",
-                backgroundColor: currentPath === link.path ? "rgba(198, 244, 50, 0.4)" : "transparent",
+                color: currentPath === link.path ? "var(--knovara-text-primary)" : "var(--knovara-text-secondary)",
+                borderBottom: currentPath === link.path ? "2px solid var(--knovara-blue-primary)" : "2px solid transparent",
+                backgroundColor: currentPath === link.path ? "rgba(33, 150, 243, 0.12)" : "transparent",
                 padding: "6px 12px",
                 borderRadius: "var(--radius-sm)",
-                boxShadow: currentPath === link.path ? "0 0 12px rgba(198, 244, 50, 0.6)" : "none",
+                boxShadow: currentPath === link.path ? "0 0 12px rgba(144, 202, 248, 0.5)" : "none",
                 textDecoration: "none",
                 display: "inline-flex",
                 alignItems: "center",
@@ -157,12 +157,12 @@ export function Header({ currentPath = "/", onNavigate }) {
                     fontSize: "0.625rem",
                     padding: "2px 6px",
                     borderRadius: "4px",
-                    background: "var(--knovara-lime)",
-                    color: "#18181B",
-                    border: "1px solid #98C414",
+                    background: "var(--knovara-blue-primary)",
+                    color: "#FFFFFF",
+                    border: "1px solid #1E88E5",
                     fontWeight: 800,
                     letterSpacing: "0.05em",
-                    boxShadow: "0 0 8px rgba(198, 244, 50, 0.6)",
+                    boxShadow: "0 0 8px rgba(33, 150, 243, 0.5)",
                   }}
                 >
                   {link.badge}
@@ -242,8 +242,8 @@ export function Header({ currentPath = "/", onNavigate }) {
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: "0.875rem",
-                color: currentPath === link.path ? "#18181B" : "var(--knovara-text-primary)",
-                backgroundColor: currentPath === link.path ? "rgba(198, 244, 50, 0.4)" : "transparent",
+                color: currentPath === link.path ? "var(--knovara-text-primary)" : "var(--knovara-text-secondary)",
+                backgroundColor: currentPath === link.path ? "rgba(33, 150, 243, 0.12)" : "transparent",
                 padding: "8px 12px",
                 borderRadius: "var(--radius-sm)",
                 textDecoration: "none",
@@ -259,9 +259,9 @@ export function Header({ currentPath = "/", onNavigate }) {
                     fontSize: "0.625rem",
                     padding: "2px 6px",
                     borderRadius: "4px",
-                    background: "var(--knovara-lime)",
-                    color: "#18181B",
-                    border: "1px solid #98C414",
+                    background: "var(--knovara-blue-primary)",
+                    color: "#FFFFFF",
+                    border: "1px solid #1E88E5",
                     fontWeight: 800,
                   }}
                 >

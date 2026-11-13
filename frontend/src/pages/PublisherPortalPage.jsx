@@ -157,7 +157,7 @@ export function PublisherPortalPage({ onNavigate }) {
     <div style={{ maxWidth: "1000px", margin: "0 auto", padding: "24px 16px" }}>
       <div style={{ marginBottom: "32px" }}>
         <h1 style={{ fontSize: "2.25rem", fontWeight: 900, color: "var(--knovara-text-primary)", marginBottom: "8px" }}>
-          Publisher Portal<span style={{ color: "var(--knovara-lime)" }}>.</span>
+          Publisher Portal<span style={{ color: "var(--knovara-blue-primary)" }}>.</span>
         </h1>
         <p style={{ color: "var(--knovara-text-secondary)", fontSize: "1.0625rem" }}>
           Publish and monetize computational APIs, proprietary datasets, and AI technologies.

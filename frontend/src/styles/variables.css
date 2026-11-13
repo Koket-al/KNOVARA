@@ -1,60 +1,59 @@
 :root {
   /* =====================================================================
      KNOVARA DESIGN SYSTEM VARIABLES
-     Theme: Warm Khaki Beige (#D5CEA2) & Ultra-Radiant Neon Lime (#C6F432)
-     Colors:
-       - Background:  #D5CEA2 (Uploaded swatch)
-       - Surface:     #DFD8AE / #E8E2C2
-       - Headings:    #18181B (Deep rich dark charcoal)
-       - Body Text:   #3F3F46 (Clean dark slate)
-       - Neon Lime:   #C6F432 (Ultra-radiant glow brand accent)
+     Theme: Sky Oceanic Harmony
+     Exact Color Palette extracted from uploaded swatch:
+       - Band 1 (Background):        #E4F2FD (Soft Ice Sky Blue)
+       - Band 2 (Borders & Accents): #90CAF8 (Soft Powder Sky Blue)
+       - Band 3 (Brand Primary CTA): #2196F3 (Vibrant Electric Royal Blue)
+       - Band 4 (Deep Navy Text):    #0E47A1 (Deep Rich Midnight Navy)
      ===================================================================== */
 
-  /* Neutral Backgrounds & Surfaces */
-  --knovara-bg: #D5CEA2;               /* Exact uploaded beige/sand swatch */
-  --knovara-bg-secondary: #CBC498;     /* Slightly deeper beige layer */
-  --knovara-surface: #DFD8AE;          /* Elevated warm surface */
-  --knovara-surface-card: #E8E2C2;     /* Warm cream card base */
-  --knovara-surface-highlight: #F2ECDE;/* Hover & active highlight */
+  /* Neutral Backgrounds & Oceanic Surfaces */
+  --knovara-bg: #E4F2FD;               /* Exact uploaded top ice-sky swatch */
+  --knovara-bg-secondary: #D8ECFA;     /* Slightly deeper sky-tinted backdrop */
+  --knovara-surface: #EDF6FD;          /* Elevated light sky surface */
+  --knovara-surface-card: #FFFFFF;     /* Crisp clean white card base */
+  --knovara-surface-highlight: #E1F0FC;/* Hover & active highlight */
 
   /* Borders, Dividers & Architectural Lines */
-  --knovara-divider: rgba(24, 24, 27, 0.12);
-  --knovara-border: rgba(24, 24, 27, 0.16);
-  --knovara-border-strong: rgba(24, 24, 27, 0.28);
-  --knovara-border-lime: #98C414;
+  --knovara-divider: rgba(144, 202, 248, 0.45);
+  --knovara-border: #90CAF8;           /* Exact uploaded sky blue border */
+  --knovara-border-strong: #64B5F6;    /* Medium sky blue border */
+  --knovara-border-lime: #2196F3;
 
-  /* Brand Accents - Ultra-Radiant Lime Green (#C6F432) */
+  /* Brand Accents - Vibrant Electric Royal Blue (#2196F3) */
+  --knovara-blue-primary: #2196F3;     /* Exact uploaded electric blue */
+  --knovara-blue-primary-hover: #1E88E5;
+  --knovara-blue-primary-active: #1976D2;
+  --knovara-blue-subtle: rgba(33, 150, 243, 0.12);
+  --knovara-blue-border: #90CAF8;
+
+  --knovara-blue-sky: #90CAF8;         /* Exact uploaded sky blue */
+  --knovara-blue-sky-hover: #64B5F6;
+  --knovara-blue-sky-subtle: rgba(144, 202, 248, 0.25);
+
+  /* Luminous Lime Accent (Preserved for Active Status Dots & Micro-Highlights) */
   --knovara-lime: #C6F432;             /* Vibrant Neon Lime */
   --knovara-lime-hover: #D6F94A;
   --knovara-lime-active: #B0DD24;
   --knovara-lime-subtle: rgba(198, 244, 50, 0.25);
   --knovara-lime-glow: rgba(198, 244, 50, 0.6);
-  --knovara-focus-ring: rgba(198, 244, 50, 0.7);
+  --knovara-focus-ring: rgba(33, 150, 243, 0.45);
 
-  /* Aliases for Existing Component Selectors */
-  --knovara-blue-primary: #C6F432;
-  --knovara-blue-primary-hover: #D6F94A;
-  --knovara-blue-primary-active: #B0DD24;
-  --knovara-blue-subtle: rgba(198, 244, 50, 0.25);
-  --knovara-blue-border: #98C414;
-
-  --knovara-blue-sky: #C6F432;
-  --knovara-blue-sky-hover: #D6F94A;
-  --knovara-blue-sky-subtle: rgba(198, 244, 50, 0.25);
-
-  /* High-Contrast Typography fitted to Warm Beige Background */
-  --knovara-text-primary: #18181B;     /* Deep rich dark charcoal */
-  --knovara-text-secondary: #3F3F46;   /* Clean readable dark slate */
-  --knovara-text-muted: #52525B;       /* Muted technical gray */
-  --knovara-text-inverse: #18181B;     /* Dark text on Neon Lime elements */
+  /* High-Contrast Typography fitted to Ice Sky Blue Background */
+  --knovara-text-primary: #0E47A1;     /* Exact uploaded deep navy (WCAG AAA 10.5:1) */
+  --knovara-text-secondary: #154A8A;   /* Clear readable oceanic navy */
+  --knovara-text-muted: #4A7AA5;       /* Muted denim slate */
+  --knovara-text-inverse: #FFFFFF;     /* White text on royal blue buttons */
 
   /* Status Colors */
   --knovara-status-success: #16A34A;
-  --knovara-status-success-bg: rgba(22, 163, 74, 0.16);
+  --knovara-status-success-bg: rgba(22, 163, 74, 0.14);
   --knovara-status-warning: #D97706;
-  --knovara-status-warning-bg: rgba(217, 119, 6, 0.16);
+  --knovara-status-warning-bg: rgba(217, 119, 6, 0.14);
   --knovara-status-danger: #DC2626;
-  --knovara-status-danger-bg: rgba(220, 38, 38, 0.16);
+  --knovara-status-danger-bg: rgba(220, 38, 38, 0.14);
 
   /* Typography */
   --font-serif: "Instrument Serif", Georgia, serif;
@@ -72,12 +71,15 @@
   --radius-pill: 9999px;
 
   /* Shadows & Luminous Glow */
-  --shadow-subtle: 0 1px 3px rgba(24, 24, 27, 0.08);
-  --shadow-card: 0 4px 20px rgba(24, 24, 27, 0.08), 0 0 0 1px rgba(24, 24, 27, 0.08);
-  --shadow-elevated: 0 20px 40px rgba(24, 24, 27, 0.14), 0 0 0 1px rgba(24, 24, 27, 0.12);
+  --shadow-subtle: 0 1px 3px rgba(14, 71, 161, 0.08);
+  --shadow-card: 0 4px 20px rgba(14, 71, 161, 0.06), 0 0 0 1px #90CAF8;
+  --shadow-elevated: 0 20px 40px rgba(14, 71, 161, 0.12), 0 0 0 1px #64B5F6;
   
-  /* Ultra-Radiant Neon Lime Shine */
-  --glow-lime: 0 0 18px rgba(198, 244, 50, 0.85), 0 0 40px rgba(198, 244, 50, 0.55), 0 2px 10px rgba(24, 24, 27, 0.2);
-  --glow-lime-subtle: 0 0 12px rgba(198, 244, 50, 0.6), 0 0 25px rgba(198, 244, 50, 0.35);
-  --glow-lime-intense: 0 0 12px #C6F432, 0 0 28px rgba(198, 244, 50, 0.95), 0 0 60px rgba(198, 244, 50, 0.65), 0 2px 12px rgba(24, 24, 27, 0.3);
+  /* Electric Blue Luminous Shine */
+  --glow-blue: 0 0 16px rgba(33, 150, 243, 0.75), 0 0 35px rgba(33, 150, 243, 0.4), 0 2px 8px rgba(14, 71, 161, 0.2);
+  --glow-blue-subtle: 0 0 12px rgba(144, 202, 248, 0.6), 0 0 24px rgba(33, 150, 243, 0.3);
+  --glow-blue-intense: 0 0 14px #2196F3, 0 0 32px rgba(33, 150, 243, 0.9), 0 0 65px rgba(144, 202, 248, 0.6), 0 2px 10px rgba(14, 71, 161, 0.25);
+  --glow-lime: 0 0 16px #C6F432, 0 0 32px rgba(198, 244, 50, 0.8), 0 2px 8px rgba(14, 71, 161, 0.2);
+  --glow-lime-subtle: 0 0 12px rgba(198, 244, 50, 0.65), 0 0 24px rgba(198, 244, 50, 0.35);
+  --glow-lime-intense: 0 0 14px #C6F432, 0 0 32px rgba(198, 244, 50, 0.95), 0 0 65px rgba(198, 244, 50, 0.65);
 }

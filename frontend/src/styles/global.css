@@ -26,9 +26,9 @@ body {
   position: relative;
   overflow-x: hidden;
   background-image: 
-    radial-gradient(ellipse 80% 50% at 50% -8%, rgba(198, 244, 50, 0.35) 0%, transparent 68%),
-    linear-gradient(to right, rgba(24, 24, 27, 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(24, 24, 27, 0.05) 1px, transparent 1px);
+    radial-gradient(ellipse 80% 50% at 50% -8%, rgba(33, 150, 243, 0.25) 0%, transparent 68%),
+    linear-gradient(to right, rgba(14, 71, 161, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(14, 71, 161, 0.05) 1px, transparent 1px);
   background-size: 100% 100%, 48px 48px, 48px 48px;
 }
 
@@ -60,7 +60,7 @@ h4 {
   font-size: 1.125rem;
 }
 
-/* Elegant Editorial Serif Display Typography (matching screenshot) */
+/* Elegant Editorial Serif Display Typography */
 .hero-serif-title {
   font-family: var(--font-serif);
   font-size: clamp(2.75rem, 5.5vw, 4.5rem);
@@ -74,28 +74,28 @@ h4 {
   font-family: var(--font-serif);
   font-style: italic;
   font-weight: 500;
-  color: #18181B;
-  background: var(--knovara-lime);
-  padding: 0 10px;
+  color: #FFFFFF;
+  background: linear-gradient(135deg, #2196F3 0%, #0E47A1 100%);
+  padding: 2px 14px;
   border-radius: var(--radius-sm);
-  box-shadow: 0 0 18px #C6F432, 0 0 40px rgba(198, 244, 50, 0.8), 0 2px 8px rgba(24, 24, 27, 0.2);
+  box-shadow: 0 0 20px rgba(33, 150, 243, 0.75), 0 0 45px rgba(144, 202, 248, 0.5), 0 2px 8px rgba(14, 71, 161, 0.25);
   display: inline-block;
   line-height: 1.15;
 }
 
 /* Links */
 a {
-  color: var(--knovara-text-primary);
+  color: var(--knovara-blue-primary);
   text-decoration: underline;
-  text-decoration-color: var(--knovara-lime);
+  text-decoration-color: var(--knovara-border);
   text-underline-offset: 3px;
   text-decoration-thickness: 2px;
   transition: color 0.15s ease, text-decoration-color 0.15s ease;
 }
 
 a:hover {
-  color: #000000;
-  text-decoration-color: #98C414;
+  color: var(--knovara-text-primary);
+  text-decoration-color: var(--knovara-blue-primary);
 }
 
 /* Form Elements & Inputs */
@@ -112,7 +112,7 @@ select,
 textarea {
   width: 100%;
   padding: 10px 14px;
-  background-color: var(--knovara-surface);
+  background-color: var(--knovara-surface-card);
   border: 1px solid var(--knovara-border);
   border-radius: var(--radius-sm);
   color: var(--knovara-text-primary);
@@ -125,8 +125,8 @@ input:focus,
 select:focus,
 textarea:focus {
   outline: none;
-  border-color: var(--knovara-lime);
-  box-shadow: 0 0 0 3px var(--knovara-focus-ring);
+  border-color: var(--knovara-blue-primary);
+  box-shadow: 0 0 0 3px var(--knovara-focus-ring), 0 0 12px rgba(144, 202, 248, 0.5);
 }
 
 input::placeholder,
@@ -159,35 +159,35 @@ textarea::placeholder {
   pointer-events: none;
 }
 
-/* Primary Button: Vibrant Lime Green pill with Midnight Black text */
+/* Primary Button: Vibrant Electric Royal Blue pill */
 .knovara-btn-primary {
-  background-color: var(--knovara-lime);
-  color: #18181B;
-  border-color: #98C414;
+  background-color: var(--knovara-blue-primary);
+  color: #FFFFFF;
+  border-color: #1E88E5;
   font-weight: 700;
-  box-shadow: 0 0 16px rgba(198, 244, 50, 0.85), 0 0 35px rgba(198, 244, 50, 0.5), 0 2px 8px rgba(24, 24, 27, 0.25);
+  box-shadow: 0 0 16px rgba(33, 150, 243, 0.65), 0 2px 8px rgba(14, 71, 161, 0.2);
 }
 
 .knovara-btn-primary:hover:not(:disabled) {
-  background-color: var(--knovara-lime-hover);
-  border-color: #B2E51A;
-  color: #000000;
-  box-shadow: 0 0 20px #C6F432, 0 0 45px rgba(198, 244, 50, 0.95), 0 0 80px rgba(198, 244, 50, 0.65), 0 3px 12px rgba(24, 24, 27, 0.35);
+  background-color: var(--knovara-blue-primary-hover);
+  border-color: #1976D2;
+  color: #FFFFFF;
+  box-shadow: var(--glow-blue-intense);
   transform: translateY(-2px);
 }
 
 /* Secondary Button: Elevated clean pill */
 .knovara-btn-secondary {
-  background-color: rgba(24, 24, 27, 0.07);
+  background-color: rgba(33, 150, 243, 0.08);
   color: var(--knovara-text-primary);
-  border: 1px solid var(--knovara-border-strong);
+  border: 1px solid var(--knovara-border);
   backdrop-filter: blur(8px);
 }
 
 .knovara-btn-secondary:hover:not(:disabled) {
-  background-color: rgba(24, 24, 27, 0.12);
-  border-color: #98C414;
-  box-shadow: 0 0 14px rgba(198, 244, 50, 0.4);
+  background-color: rgba(33, 150, 243, 0.16);
+  border-color: var(--knovara-blue-primary);
+  box-shadow: 0 0 14px rgba(33, 150, 243, 0.3);
   transform: translateY(-1px);
 }
 
@@ -195,29 +195,29 @@ textarea::placeholder {
 .knovara-btn-outline {
   background-color: transparent;
   color: var(--knovara-text-primary);
-  border: 1px solid var(--knovara-border-strong);
+  border: 1px solid var(--knovara-border);
 }
 
 .knovara-btn-outline:hover:not(:disabled) {
-  background-color: var(--knovara-lime);
-  border-color: #98C414;
-  color: #18181B;
-  box-shadow: 0 0 16px rgba(198, 244, 50, 0.65);
+  background-color: var(--knovara-blue-primary);
+  border-color: var(--knovara-blue-primary);
+  color: #FFFFFF;
+  box-shadow: 0 0 16px rgba(33, 150, 243, 0.5);
 }
 
-/* Sky/Lime Accent Button */
+/* Sky/Accent Button */
 .knovara-btn-sky {
-  background-color: var(--knovara-lime);
-  color: #18181B;
-  border: 1px solid #98C414;
+  background-color: var(--knovara-blue-primary);
+  color: #FFFFFF;
+  border: 1px solid #1E88E5;
   font-weight: 700;
-  box-shadow: 0 0 16px rgba(198, 244, 50, 0.8), 0 2px 6px rgba(24, 24, 27, 0.2);
+  box-shadow: 0 0 14px rgba(33, 150, 243, 0.5), 0 2px 6px rgba(14, 71, 161, 0.15);
 }
 
 .knovara-btn-sky:hover:not(:disabled) {
-  background-color: var(--knovara-lime-hover);
-  border-color: #B2E51A;
-  box-shadow: var(--glow-lime-intense);
+  background-color: var(--knovara-blue-primary-hover);
+  border-color: #1976D2;
+  box-shadow: var(--glow-blue-intense);
   transform: translateY(-1px);
 }
 
@@ -242,7 +242,7 @@ textarea::placeholder {
   font-size: 1rem;
 }
 
-/* Card Surfaces: Dark Glassmorphic with Subtle Border */
+/* Card Surfaces: Crisp Clean Surfaces with Oceanic Borders */
 .knovara-card {
   background-color: var(--knovara-surface-card);
   border: 1px solid var(--knovara-border);
@@ -255,27 +255,27 @@ textarea::placeholder {
 }
 
 .knovara-card-interactive:hover {
-  border-color: var(--knovara-border-lime);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7), var(--glow-lime-subtle);
+  border-color: var(--knovara-blue-primary);
+  box-shadow: 0 8px 30px rgba(14, 71, 161, 0.12), var(--glow-blue-subtle);
   transform: translateY(-2px);
 }
 
 /* Monospace & Code Tags */
 code, .knovara-mono-tag {
   font-family: var(--font-mono);
-  background-color: rgba(24, 24, 27, 0.08);
+  background-color: rgba(33, 150, 243, 0.08);
   padding: 2px 7px;
   border-radius: var(--radius-xs);
   font-size: 0.8125rem;
   color: var(--knovara-text-primary);
   word-break: break-all;
-  border: 1px solid rgba(24, 24, 27, 0.12);
+  border: 1px solid rgba(144, 202, 248, 0.5);
 }
 
 .knovara-hash-badge {
   font-family: var(--font-mono);
   font-size: 0.75rem;
-  background-color: var(--knovara-surface-card);
+  background-color: var(--knovara-surface);
   border: 1px solid var(--knovara-border);
   padding: 4px 10px;
   border-radius: var(--radius-pill);
@@ -301,19 +301,18 @@ code, .knovara-mono-tag {
 
 .knovara-badge-blue,
 .knovara-badge-sky {
-  background-color: var(--knovara-lime);
-  color: #18181B;
-  border: 1px solid #98C414;
+  background-color: rgba(33, 150, 243, 0.14);
+  color: var(--knovara-text-primary);
+  border: 1px solid var(--knovara-border);
   font-weight: 700;
-  box-shadow: 0 0 10px rgba(198, 244, 50, 0.6);
+  box-shadow: 0 0 10px rgba(144, 202, 248, 0.5);
 }
 
 .knovara-badge-success {
-  background-color: var(--knovara-lime);
-  color: #18181B;
-  border: 1px solid #98C414;
+  background-color: rgba(22, 163, 74, 0.12);
+  color: #15803D;
+  border: 1px solid rgba(22, 163, 74, 0.3);
   font-weight: 700;
-  box-shadow: 0 0 10px rgba(198, 244, 50, 0.6);
 }
 
 .knovara-badge-warning {
@@ -338,8 +337,8 @@ code, .knovara-mono-tag {
 }
 
 .knovara-alert-info {
-  background-color: var(--knovara-lime-subtle);
-  border-color: var(--knovara-border-lime);
+  background-color: rgba(33, 150, 243, 0.1);
+  border-color: var(--knovara-border);
   color: var(--knovara-text-primary);
 }
 
@@ -357,14 +356,14 @@ code, .knovara-mono-tag {
 
 .knovara-alert-success {
   background-color: var(--knovara-status-success-bg);
-  border-color: var(--knovara-border-lime);
-  color: var(--knovara-lime);
+  border-color: rgba(22, 163, 74, 0.3);
+  color: #15803D;
 }
 
 /* Legal Disclaimer Banner */
 .knovara-legal-banner {
-  background-color: rgba(198, 244, 50, 0.04);
-  border-left: 3px solid var(--knovara-lime);
+  background-color: rgba(33, 150, 243, 0.05);
+  border-left: 3px solid var(--knovara-blue-primary);
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   padding: 14px 18px;
   font-size: 0.8125rem;
@@ -374,7 +373,7 @@ code, .knovara-mono-tag {
 }
 
 .knovara-legal-banner strong {
-  color: var(--knovara-lime);
+  color: var(--knovara-text-primary);
 }
 
 /* Tables */
@@ -399,12 +398,12 @@ code, .knovara-mono-tag {
 
 .knovara-table td {
   padding: 14px 16px;
-  border-bottom: 1px solid var(--knovara-border);
+  border-bottom: 1px solid var(--knovara-divider);
   vertical-align: middle;
 }
 
 .knovara-table tr:hover td {
-  background-color: rgba(198, 244, 50, 0.03);
+  background-color: rgba(33, 150, 243, 0.04);
 }
 
 /* Layout Utilities */
@@ -471,15 +470,14 @@ code, .knovara-mono-tag {
 
 /* =====================================================================
    LUMINOUS LIGHTING & ARCHITECTURAL LINE EFFECTS
-   (Directly inspired by reference screenshot)
    ===================================================================== */
 
 /* Subtle glowing line divider */
 .knovara-glow-line {
   height: 2px;
   width: 100%;
-  background: linear-gradient(90deg, transparent 0%, rgba(198, 244, 50, 0.3) 15%, #C6F432 50%, rgba(198, 244, 50, 0.3) 85%, transparent 100%);
-  box-shadow: 0 0 16px rgba(198, 244, 50, 0.75), 0 0 32px rgba(198, 244, 50, 0.4);
+  background: linear-gradient(90deg, transparent 0%, rgba(144, 202, 248, 0.4) 15%, #2196F3 50%, rgba(144, 202, 248, 0.4) 85%, transparent 100%);
+  box-shadow: 0 0 16px rgba(33, 150, 243, 0.65), 0 0 32px rgba(144, 202, 248, 0.4);
   margin: 32px 0;
 }
 
@@ -489,11 +487,11 @@ code, .knovara-mono-tag {
   top: 0;
   bottom: 0;
   width: 1px;
-  background: linear-gradient(180deg, transparent 0%, rgba(198, 244, 50, 0.45) 50%, transparent 100%);
-  box-shadow: 0 0 10px rgba(198, 244, 50, 0.3);
+  background: linear-gradient(180deg, transparent 0%, rgba(33, 150, 243, 0.45) 50%, transparent 100%);
+  box-shadow: 0 0 10px rgba(144, 202, 248, 0.5);
 }
 
-/* Bottom Showcase Section with Upward Radiant Neon Light Aura */
+/* Bottom Showcase Section with Upward Radiant Oceanic Light Aura */
 .knovara-bottom-aura {
   position: relative;
   overflow: visible;
@@ -509,7 +507,7 @@ code, .knovara-mono-tag {
   width: 95%;
   max-width: 1040px;
   height: 420px;
-  background: radial-gradient(ellipse 70% 60% at 50% 90%, rgba(198, 244, 50, 0.55) 0%, rgba(198, 244, 50, 0.25) 45%, transparent 80%);
+  background: radial-gradient(ellipse 70% 60% at 50% 90%, rgba(33, 150, 243, 0.45) 0%, rgba(144, 202, 248, 0.22) 45%, transparent 80%);
   pointer-events: none;
   z-index: 0;
   filter: blur(28px);
@@ -522,8 +520,8 @@ code, .knovara-mono-tag {
   gap: 8px;
   padding: 6px 14px;
   border-radius: var(--radius-pill);
-  background: rgba(24, 24, 27, 0.08);
-  border: 1px solid var(--knovara-border-strong);
+  background: rgba(33, 150, 243, 0.08);
+  border: 1px solid var(--knovara-border);
   color: var(--knovara-text-primary);
   font-size: 0.8125rem;
   font-family: var(--font-heading);
@@ -531,9 +529,9 @@ code, .knovara-mono-tag {
 }
 
 .hero-pill-badge .dot {
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  background-color: var(--knovara-lime);
-  box-shadow: 0 0 10px #C6F432, 0 0 20px #C6F432;
+  background-color: var(--knovara-blue-primary);
+  box-shadow: 0 0 10px #2196F3, 0 0 20px #2196F3;
 }

@@ -96,7 +96,7 @@ export function HomePage({ onNavigate }) {
             }}
           >
             <div>
-              <div style={{ fontSize: "1.85rem", fontWeight: 800, color: "var(--knovara-lime)", fontFamily: "var(--font-heading)" }}>
+              <div style={{ fontSize: "1.85rem", fontWeight: 800, color: "var(--knovara-blue-primary)", fontFamily: "var(--font-heading)" }}>
                 100%
               </div>
               <div style={{ fontSize: "0.8125rem", color: "var(--knovara-text-secondary)", marginTop: "4px" }}>
@@ -123,7 +123,7 @@ export function HomePage({ onNavigate }) {
             </div>
 
             <div>
-              <div style={{ fontSize: "1.85rem", fontWeight: 800, color: "var(--knovara-lime)", fontFamily: "var(--font-heading)" }}>
+              <div style={{ fontSize: "1.85rem", fontWeight: 800, color: "var(--knovara-blue-primary)", fontFamily: "var(--font-heading)" }}>
                 Instant
               </div>
               <div style={{ fontSize: "0.8125rem", color: "var(--knovara-text-secondary)", marginTop: "4px" }}>
@@ -251,10 +251,10 @@ export function HomePage({ onNavigate }) {
             title="• Gateway & Protocol Health"
             subtitle="Auto-audit & SSRF firewall enabled"
             interactive
-            style={{ backgroundColor: "var(--knovara-surface-card)", borderColor: "var(--knovara-border-lime)", boxShadow: "var(--glow-lime-subtle)" }}
+            style={{ backgroundColor: "var(--knovara-surface-card)", borderColor: "var(--knovara-border)", boxShadow: "var(--shadow-card)" }}
           >
             <div style={{ display: "flex", alignItems: "baseline", gap: "8px", margin: "10px 0" }}>
-              <span style={{ fontSize: "3rem", fontWeight: 800, color: "#18181B", textShadow: "0 0 16px #C6F432, 0 0 35px rgba(198, 244, 50, 0.8)", fontFamily: "var(--font-heading)", lineHeight: 1 }}>
+              <span style={{ fontSize: "3rem", fontWeight: 800, color: "var(--knovara-text-primary)", textShadow: "0 0 16px rgba(33, 150, 243, 0.45)", fontFamily: "var(--font-heading)", lineHeight: 1 }}>
                 99.9
               </span>
               <span style={{ fontSize: "0.8125rem", color: "var(--knovara-text-muted)" }}>
@@ -262,27 +262,27 @@ export function HomePage({ onNavigate }) {
               </span>
             </div>
 
-            {/* Glowing SVG Area Chart matching screenshot */}
+            {/* Glowing SVG Area Chart */}
             <div style={{ width: "100%", height: "70px", position: "relative", marginTop: "12px" }}>
               <svg viewBox="0 0 200 60" style={{ width: "100%", height: "100%", overflow: "visible" }}>
                 <defs>
-                  <linearGradient id="limeGlowGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stopColor="#C6F432" stopOpacity="0.45" />
-                    <stop offset="100%" stopColor="#C6F432" stopOpacity="0.0" />
+                  <linearGradient id="blueGlowGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stopColor="#2196F3" stopOpacity="0.4" />
+                    <stop offset="100%" stopColor="#2196F3" stopOpacity="0.0" />
                   </linearGradient>
                 </defs>
                 <path
                   d="M0,50 Q40,42 70,35 T130,22 T170,14 T200,8 L200,60 L0,60 Z"
-                  fill="url(#limeGlowGrad)"
+                  fill="url(#blueGlowGrad)"
                 />
                 <path
                   d="M0,50 Q40,42 70,35 T130,22 T170,14 T200,8"
                   fill="none"
-                  stroke="#7CA90B"
+                  stroke="#2196F3"
                   strokeWidth="2.5"
                   strokeLinecap="round"
                 />
-                <circle cx="200" cy="8" r="4" fill="#C6F432" stroke="#18181B" strokeWidth="1" filter="drop-shadow(0 0 8px #C6F432)" />
+                <circle cx="200" cy="8" r="4" fill="#2196F3" filter="drop-shadow(0 0 8px #2196F3)" />
               </svg>
             </div>
             <div style={{ fontSize: "0.75rem", color: "var(--knovara-text-muted)", marginTop: "6px", textAlign: "right" }}>
@@ -290,7 +290,7 @@ export function HomePage({ onNavigate }) {
             </div>
           </Card>
 
-          {/* Card 3: Licensing State Timeline (like Merge Timeline in screenshot) */}
+          {/* Card 3: Licensing State Timeline */}
           <Card
             title="• Agent Subscription Lifecycle"
             subtitle="Cryptographic authorization"
@@ -300,22 +300,22 @@ export function HomePage({ onNavigate }) {
             <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "14px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <span style={{ width: "80px", fontSize: "0.75rem", color: "var(--knovara-text-muted)" }}>01. Discovery</span>
-                <div style={{ flex: 1, height: "10px", background: "rgba(24, 24, 27, 0.08)", borderRadius: "var(--radius-pill)", overflow: "hidden" }}>
-                  <div style={{ width: "100%", height: "100%", background: "#18181B", borderRadius: "var(--radius-pill)" }} />
+                <div style={{ flex: 1, height: "10px", background: "rgba(144, 202, 248, 0.25)", borderRadius: "var(--radius-pill)", overflow: "hidden" }}>
+                  <div style={{ width: "100%", height: "100%", background: "var(--knovara-text-primary)", borderRadius: "var(--radius-pill)" }} />
                 </div>
               </div>
 
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <span style={{ width: "80px", fontSize: "0.75rem", color: "var(--knovara-text-muted)" }}>02. Approval</span>
-                <div style={{ flex: 1, height: "10px", background: "rgba(24, 24, 27, 0.08)", borderRadius: "var(--radius-pill)", overflow: "hidden" }}>
-                  <div style={{ width: "100%", height: "100%", background: "var(--knovara-lime)", borderRadius: "var(--radius-pill)", boxShadow: "0 0 10px #C6F432" }} />
+                <div style={{ flex: 1, height: "10px", background: "rgba(144, 202, 248, 0.25)", borderRadius: "var(--radius-pill)", overflow: "hidden" }}>
+                  <div style={{ width: "100%", height: "100%", background: "var(--knovara-blue-primary)", borderRadius: "var(--radius-pill)", boxShadow: "0 0 10px #2196F3" }} />
                 </div>
               </div>
 
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <span style={{ width: "80px", fontSize: "0.75rem", color: "var(--knovara-text-muted)" }}>03. Gateway</span>
-                <div style={{ flex: 1, height: "10px", background: "rgba(24, 24, 27, 0.08)", borderRadius: "var(--radius-pill)", overflow: "hidden" }}>
-                  <div style={{ width: "95%", height: "100%", background: "var(--knovara-lime)", borderRadius: "var(--radius-pill)", boxShadow: "0 0 14px #C6F432" }} />
+                <div style={{ flex: 1, height: "10px", background: "rgba(144, 202, 248, 0.25)", borderRadius: "var(--radius-pill)", overflow: "hidden" }}>
+                  <div style={{ width: "95%", height: "100%", background: "var(--knovara-blue-primary)", borderRadius: "var(--radius-pill)", boxShadow: "0 0 14px #2196F3" }} />
                 </div>
               </div>
             </div>
@@ -347,7 +347,7 @@ export function HomePage({ onNavigate }) {
             <div style={{ fontSize: "0.75rem", color: "var(--knovara-text-muted)", textTransform: "uppercase" }}>
               Network
             </div>
-            <strong style={{ color: "var(--knovara-lime)", fontSize: "0.875rem" }}>NEAR {config.NEAR_NETWORK}</strong>
+            <strong style={{ color: "var(--knovara-blue-primary)", fontSize: "0.875rem" }}>NEAR {config.NEAR_NETWORK}</strong>
           </div>
           <div>
             <div style={{ fontSize: "0.75rem", color: "var(--knovara-text-muted)", textTransform: "uppercase" }}>
