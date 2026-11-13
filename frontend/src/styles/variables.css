@@ -1,59 +1,59 @@
 :root {
   /* =====================================================================
      KNOVARA DESIGN SYSTEM VARIABLES
-     Theme: Midnight Black & Neon Lime Green
-     Color Swatches from Reference:
-       - Midnight Black: #0B0B0C
-       - Pure White:     #FFFFFF
-       - Lime Green:     #C6F432
-     Direction: Sleek, high-contrast, luminous, editorial, and futuristic.
+     Theme: Slate Charcoal (#58595B) & Ultra-Luminous Neon Lime Green (#C6F432)
+     Colors matching uploaded palette:
+       - Slate Charcoal: #58595B (body & backdrop layers: #4F5053 / #434447)
+       - Pure White:     #FFFFFF (headings & primary text)
+       - Soft Linen:     #E2E8F0 (supporting text)
+       - Neon Lime:      #C6F432 (ultra-radiant shine brand accent)
      ===================================================================== */
 
-  /* Neutral Backgrounds & Dark Surfaces */
-  --knovara-bg: #0B0B0C;               /* Midnight Black */
-  --knovara-bg-secondary: #0E0E11;     /* Elevated backdrop layer */
-  --knovara-surface: #141417;          /* Sleek charcoal surface */
-  --knovara-surface-card: #16161A;     /* Dark glassmorphic card base */
-  --knovara-surface-highlight: #1F1F24;/* Hover & active surface highlight */
+  /* Neutral Backgrounds & Slate Charcoal Surfaces */
+  --knovara-bg: #4F5053;               /* Slate Charcoal Gray from image */
+  --knovara-bg-secondary: #434447;     /* Elevated backdrop layer */
+  --knovara-surface: #3E3F42;          /* Sleek charcoal surface */
+  --knovara-surface-card: #353639;     /* Deep slate card surface */
+  --knovara-surface-highlight: #5A5B5E;/* Hover & active highlight */
   
   /* Borders, Dividers & Architectural Lines */
-  --knovara-divider: rgba(255, 255, 255, 0.08);
-  --knovara-border: rgba(255, 255, 255, 0.1);
-  --knovara-border-strong: rgba(255, 255, 255, 0.18);
-  --knovara-border-lime: rgba(198, 244, 50, 0.35);
+  --knovara-divider: rgba(255, 255, 255, 0.14);
+  --knovara-border: rgba(255, 255, 255, 0.18);
+  --knovara-border-strong: rgba(255, 255, 255, 0.3);
+  --knovara-border-lime: rgba(198, 244, 50, 0.55);
 
-  /* Brand Accents - Lime Green (#C6F432) */
+  /* Brand Accents - Ultra-Luminous Lime Green (#C6F432) */
   --knovara-lime: #C6F432;             /* Vibrant Neon Lime */
   --knovara-lime-hover: #D6F94A;
   --knovara-lime-active: #B0DD24;
-  --knovara-lime-subtle: rgba(198, 244, 50, 0.12);
-  --knovara-lime-glow: rgba(198, 244, 50, 0.28);
-  --knovara-focus-ring: rgba(198, 244, 50, 0.45);
+  --knovara-lime-subtle: rgba(198, 244, 50, 0.18);
+  --knovara-lime-glow: rgba(198, 244, 50, 0.45);
+  --knovara-focus-ring: rgba(198, 244, 50, 0.65);
 
   /* Aliases for Existing Component Selectors */
-  --knovara-blue-primary: #C6F432;     /* Swapped to Neon Lime */
+  --knovara-blue-primary: #C6F432;     /* Neon Lime */
   --knovara-blue-primary-hover: #D6F94A;
   --knovara-blue-primary-active: #B0DD24;
-  --knovara-blue-subtle: rgba(198, 244, 50, 0.12);
-  --knovara-blue-border: rgba(198, 244, 50, 0.35);
+  --knovara-blue-subtle: rgba(198, 244, 50, 0.18);
+  --knovara-blue-border: rgba(198, 244, 50, 0.55);
 
   --knovara-blue-sky: #C6F432;
   --knovara-blue-sky-hover: #D6F94A;
-  --knovara-blue-sky-subtle: rgba(198, 244, 50, 0.14);
+  --knovara-blue-sky-subtle: rgba(198, 244, 50, 0.2);
 
-  /* High-Contrast Typography */
+  /* High-Contrast Typography fitted to Slate Charcoal Background */
   --knovara-text-primary: #FFFFFF;     /* Pure White */
-  --knovara-text-secondary: #A1A1AA;   /* Modern silver-zinc */
-  --knovara-text-muted: #71717A;       /* Muted technical gray */
-  --knovara-text-inverse: #0B0B0C;     /* Midnight Black text on Lime elements */
+  --knovara-text-secondary: #E2E8F0;   /* Bright silver/linen from image accent */
+  --knovara-text-muted: #CBD5E1;       /* Visible slate technical text */
+  --knovara-text-inverse: #18191B;     /* Deep black text on Lime elements */
 
   /* Status Colors */
   --knovara-status-success: #C6F432;
-  --knovara-status-success-bg: rgba(198, 244, 50, 0.12);
+  --knovara-status-success-bg: rgba(198, 244, 50, 0.18);
   --knovara-status-warning: #FBBF24;
-  --knovara-status-warning-bg: rgba(251, 191, 36, 0.12);
+  --knovara-status-warning-bg: rgba(251, 191, 36, 0.18);
   --knovara-status-danger: #F87171;
-  --knovara-status-danger-bg: rgba(248, 113, 113, 0.12);
+  --knovara-status-danger-bg: rgba(248, 113, 113, 0.18);
 
   /* Typography */
   --font-serif: "Instrument Serif", Georgia, serif;
@@ -70,10 +70,13 @@
   --radius-lg: 16px;
   --radius-pill: 9999px;
 
-  /* Shadows & Luminous Glow Lighting */
-  --shadow-subtle: 0 1px 2px rgba(0, 0, 0, 0.6);
-  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08);
-  --shadow-elevated: 0 24px 48px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.12);
-  --glow-lime: 0 0 35px -5px rgba(198, 244, 50, 0.35);
-  --glow-lime-subtle: 0 0 20px -2px rgba(198, 244, 50, 0.18);
+  /* Multi-Layered Ultra-Radiant Neon Shine & Shadows */
+  --shadow-subtle: 0 2px 4px rgba(0, 0, 0, 0.35);
+  --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.12);
+  --shadow-elevated: 0 24px 56px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.18);
+  
+  /* High-Intensity Shine */
+  --glow-lime: 0 0 25px rgba(198, 244, 50, 0.65), 0 0 65px rgba(198, 244, 50, 0.35);
+  --glow-lime-subtle: 0 0 20px rgba(198, 244, 50, 0.4), 0 0 40px rgba(198, 244, 50, 0.2);
+  --glow-lime-intense: 0 0 15px #C6F432, 0 0 35px rgba(198, 244, 50, 0.75), 0 0 75px rgba(198, 244, 50, 0.4);
 }

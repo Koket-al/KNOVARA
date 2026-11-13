@@ -48,7 +48,7 @@ export function Header({ currentPath = "/", onNavigate }) {
   return (
     <header
       style={{
-        backgroundColor: "rgba(11, 11, 12, 0.85)",
+        backgroundColor: "rgba(56, 57, 60, 0.88)",
         backdropFilter: "blur(14px)",
         borderBottom: "1px solid var(--knovara-border)",
         position: "sticky",

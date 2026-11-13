@@ -217,7 +217,7 @@ export function HomePage({ onNavigate }) {
             title="• Autonomous Agent Activity"
             subtitle="Latest on-chain API calls"
             interactive
-            style={{ backgroundColor: "rgba(22, 22, 26, 0.85)", borderColor: "rgba(255, 255, 255, 0.12)" }}
+            style={{ backgroundColor: "var(--knovara-surface-card)", borderColor: "rgba(255, 255, 255, 0.18)" }}
           >
             <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "8px" }}>
               <div className="flex-between" style={{ padding: "8px 10px", background: "rgba(255, 255, 255, 0.03)", borderRadius: "var(--radius-xs)", border: "1px solid rgba(255, 255, 255, 0.05)" }}>
@@ -251,7 +251,7 @@ export function HomePage({ onNavigate }) {
             title="• Gateway & Protocol Health"
             subtitle="Auto-audit & SSRF firewall enabled"
             interactive
-            style={{ backgroundColor: "rgba(22, 22, 26, 0.85)", borderColor: "rgba(198, 244, 50, 0.25)", boxShadow: "var(--glow-lime-subtle)" }}
+            style={{ backgroundColor: "var(--knovara-surface-card)", borderColor: "rgba(198, 244, 50, 0.4)", boxShadow: "var(--glow-lime-subtle)" }}
           >
             <div style={{ display: "flex", alignItems: "baseline", gap: "8px", margin: "10px 0" }}>
               <span style={{ fontSize: "3rem", fontWeight: 800, color: "var(--knovara-lime)", fontFamily: "var(--font-heading)", lineHeight: 1 }}>
@@ -295,7 +295,7 @@ export function HomePage({ onNavigate }) {
             title="• Agent Subscription Lifecycle"
             subtitle="Cryptographic authorization"
             interactive
-            style={{ backgroundColor: "rgba(22, 22, 26, 0.85)", borderColor: "rgba(255, 255, 255, 0.12)" }}
+            style={{ backgroundColor: "var(--knovara-surface-card)", borderColor: "rgba(255, 255, 255, 0.18)" }}
           >
             <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "14px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
