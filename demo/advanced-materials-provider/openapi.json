@@ -1,0 +1,105 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Advanced Materials Research API",
+    "version": "1.0.0",
+    "description": "Proprietary alloy and composite material property recommendation service based on MMPDS-01 and ASM International datasets."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5050",
+      "description": "Local demo publisher server"
+    }
+  ],
+  "paths": {
+    "/v1/materials/recommendations": {
+      "post": {
+        "operationId": "get_material_recommendations",
+        "summary": "Recommend materials matching mechanical and environmental requirements",
+        "description": "Filters and ranks authentic aerospace and structural alloys based on minimum tensile strength, maximum density, and environmental resistance.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "application": {
+                    "type": "string",
+                    "description": "Intended engineering component (e.g., 'drone bracket', 'turbine blade', 'marine casing')"
+                  },
+                  "maximumDensity": {
+                    "type": "number",
+                    "description": "Maximum allowable density in g/cm³ (e.g., 3.0 for lightweight airframe)"
+                  },
+                  "minimumTensileStrengthMpa": {
+                    "type": "number",
+                    "description": "Minimum required ultimate tensile strength in MPa"
+                  },
+                  "corrosionResistance": {
+                    "type": "string",
+                    "enum": ["moderate", "high", "excellent"],
+                    "description": "Required environmental corrosion resistance grade"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Ranked material recommendations with authentic mechanical properties and reference citations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "count": { "type": "integer" },
+                    "recommendations": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "materialId": { "type": "string" },
+                          "name": { "type": "string" },
+                          "category": { "type": "string" },
+                          "densityGcm3": { "type": "number" },
+                          "tensileStrengthMpa": { "type": "number" },
+                          "yieldStrengthMpa": { "type": "number" },
+                          "elasticModulusGpa": { "type": "number" },
+                          "corrosionResistance": { "type": "string" },
+                          "standardReference": { "type": "string" },
+                          "suitabilityScore": { "type": "number" },
+                          "engineeringNotes": { "type": "string" }
+                        }
+                      }
+                    },
+                    "disclaimer": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized: Missing or invalid x-provider-api-key header"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-provider-api-key"
+      }
+    }
+  }
+}
+

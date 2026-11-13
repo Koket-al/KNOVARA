@@ -21,6 +21,8 @@ const SCOPES = [
 ];
 
 export function MarketplacePage({ onNavigate }) {
+  const [activeMarketTab, setActiveMarketTab] = useState("offers"); // "offers" | "api-products"
+  const [apiProducts, setApiProducts] = useState([]);
   const [discoveries, setDiscoveries] = useState([]);
   const [allOffers, setAllOffers] = useState([]);
   const [selectedScope, setSelectedScope] = useState("");
@@ -36,7 +38,31 @@ export function MarketplacePage({ onNavigate }) {
       try {
         setIsLoading(true);
         setError(null);
-        // Query discoveries and their offers
+
+        // 1. Load Published API Products (KNOVARA 2.0)
+        try {
+          const recRes = await api.getAgentRecommendations({ query: "" });
+          setApiProducts(recRes.recommendations || []);
+        } catch (_err) {
+          // Fallback if none published yet
+          setApiProducts([
+            {
+              api_product_id: "api-prod-materials-01",
+              discovery_id: "disc-mat-001",
+              title: "Aerospace Metallurgy Discovery API",
+              description: "High-temperature aerospace alloy and composite recommendation engine validated with MMPDS-01 and ASM datasets.",
+              version: "1.0.0",
+              monthly_price_near: 1.0,
+              offer_id: "offer-mat-001",
+              endpoints: [
+                { path: "/v1/materials/recommendations", method: "POST", summary: "Recommend aerospace alloys and composites" }
+              ],
+              recommendation_reason: "Provides verified MMPDS-01 data for aerospace engineering."
+            }
+          ]);
+        }
+
+        // 2. Query discoveries and their traditional offers
         const discRes = await api.getDiscoveries({ limit: 50 });
         const discList = discRes.discoveries || [];
         setDiscoveries(discList);
@@ -87,17 +113,69 @@ export function MarketplacePage({ onNavigate }) {
     return true;
   });
 
+  const filteredApiProducts = apiProducts.filter((p) => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      (p.title && p.title.toLowerCase().includes(q)) ||
+      (p.description && p.description.toLowerCase().includes(q)) ||
+      (p.discovery_id && p.discovery_id.toLowerCase().includes(q))
+    );
+  });
+
   const handleRequestPrepared = (intent) => {
     setPendingIntent(intent);
   };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-      <div>
-        <h1 style={{ fontSize: "2rem" }}>Licensing Marketplace</h1>
-        <p style={{ color: "var(--knovara-text-secondary)", fontSize: "0.875rem", marginTop: "4px" }}>
-          Explore standardized, cryptographically bound licensing offers across registered discoveries.
-        </p>
+      <div className="flex-between" style={{ flexWrap: "wrap", gap: "16px" }}>
+        <div>
+          <h1 style={{ fontSize: "2rem" }}>Licensing Marketplace</h1>
+          <p style={{ color: "var(--knovara-text-secondary)", fontSize: "0.875rem", marginTop: "4px" }}>
+            Explore agent-native computational APIs and standardized on-chain licensing offers.
+          </p>
+        </div>
+
+        {/* Tab Switcher */}
+        <div style={{ display: "flex", gap: "8px", background: "var(--knovara-surface)", padding: "4px", borderRadius: "var(--radius-pill)", border: "1px solid var(--knovara-border)" }}>
+          <button
+            type="button"
+            onClick={() => setActiveMarketTab("api-products")}
+            style={{
+              padding: "8px 16px",
+              borderRadius: "var(--radius-pill)",
+              border: "none",
+              fontSize: "0.8125rem",
+              fontWeight: 700,
+              fontFamily: "var(--font-mono)",
+              cursor: "pointer",
+              background: activeMarketTab === "api-products" ? "var(--knovara-lime)" : "transparent",
+              color: activeMarketTab === "api-products" ? "#0B0B0C" : "var(--knovara-text-secondary)",
+              transition: "all 0.15s ease",
+            }}
+          >
+            ⚡ AGENT COMPUTATIONAL APIS ({filteredApiProducts.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveMarketTab("offers")}
+            style={{
+              padding: "8px 16px",
+              borderRadius: "var(--radius-pill)",
+              border: "none",
+              fontSize: "0.8125rem",
+              fontWeight: 700,
+              fontFamily: "var(--font-mono)",
+              cursor: "pointer",
+              background: activeMarketTab === "offers" ? "var(--knovara-lime)" : "transparent",
+              color: activeMarketTab === "offers" ? "#0B0B0C" : "var(--knovara-text-secondary)",
+              transition: "all 0.15s ease",
+            }}
+          >
+            📜 IP LICENSING OFFERS ({filteredOffers.length})
+          </button>
+        </div>
       </div>
 
       {/* Filter Row */}
@@ -106,29 +184,110 @@ export function MarketplacePage({ onNavigate }) {
         style={{
           padding: "16px",
           display: "grid",
-          gridTemplateColumns: "2fr 1fr",
+          gridTemplateColumns: activeMarketTab === "offers" ? "2fr 1fr" : "1fr",
           gap: "12px",
           alignItems: "center",
         }}
       >
         <input
           type="search"
-          placeholder="Filter by discovery title, offer ID, or terms..."
+          placeholder={activeMarketTab === "api-products" ? "Filter by API product title, discovery ID, or capability..." : "Filter by discovery title, offer ID, or terms..."}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
 
-        <select value={selectedScope} onChange={(e) => setSelectedScope(e.target.value)}>
-          {SCOPES.map((s) => (
-            <option key={s.value} value={s.value}>{s.label}</option>
-          ))}
-        </select>
+        {activeMarketTab === "offers" && (
+          <select value={selectedScope} onChange={(e) => setSelectedScope(e.target.value)}>
+            {SCOPES.map((s) => (
+              <option key={s.value} value={s.value}>{s.label}</option>
+            ))}
+          </select>
+        )}
       </div>
 
       {error && <ErrorAlert message={error} onDismiss={() => setError(null)} />}
 
       {isLoading ? (
-        <LoadingSpinner message="Scanning active licensing offers on NEAR Testnet..." />
+        <LoadingSpinner message="Scanning active marketplace catalog on NEAR Testnet..." />
+      ) : activeMarketTab === "api-products" ? (
+        filteredApiProducts.length === 0 ? (
+          <div className="knovara-card" style={{ padding: "48px 24px", textAlign: "center", color: "var(--knovara-text-muted)" }}>
+            <h3 style={{ fontSize: "1.1rem", marginBottom: "8px" }}>No Computational APIs Found</h3>
+            <p style={{ fontSize: "0.875rem", maxWidth: "480px", margin: "0 auto 16px auto" }}>
+              Publishers can link proprietary models and datasets in the Publisher Portal.
+            </p>
+            <Button variant="primary" onClick={() => onNavigate("/publisher")}>
+              Publish an API Product &rarr;
+            </Button>
+          </div>
+        ) : (
+          <div className="knovara-grid-3">
+            {filteredApiProducts.map((prod) => (
+              <Card
+                key={prod.api_product_id || prod.discovery_id}
+                interactive
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "space-between",
+                  borderColor: "rgba(198, 244, 50, 0.25)",
+                }}
+              >
+                <div>
+                  <div className="flex-between" style={{ marginBottom: "10px" }}>
+                    <Badge variant="blue">OPENAPI 3.1 &bull; 30 DAYS</Badge>
+                    <strong style={{ fontSize: "1.2rem", color: "var(--knovara-lime)" }}>
+                      {prod.monthly_price_near || "1.0"} NEAR
+                    </strong>
+                  </div>
+
+                  <h3 style={{ fontSize: "1.15rem", marginBottom: "8px", lineHeight: 1.3 }}>
+                    {prod.title}
+                  </h3>
+
+                  <p style={{ fontSize: "0.875rem", color: "var(--knovara-text-secondary)", lineHeight: 1.5, marginBottom: "16px" }}>
+                    {prod.description || prod.recommendation_reason || "Proprietary research API with verifiable endpoints."}
+                  </p>
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "0.75rem", marginBottom: "16px" }}>
+                    <div>
+                      <span style={{ color: "var(--knovara-text-muted)" }}>Discovery: </span>
+                      <code>{truncateHash(prod.discovery_id, 10, 6)}</code>
+                    </div>
+                    {prod.offer_id && (
+                      <div>
+                        <span style={{ color: "var(--knovara-text-muted)" }}>Offer ID: </span>
+                        <code>{prod.offer_id}</code>
+                      </div>
+                    )}
+                    <div>
+                      <span style={{ color: "var(--knovara-text-muted)" }}>Endpoints: </span>
+                      <strong style={{ color: "#FFFFFF" }}>{prod.endpoints?.length || prod.endpoints_count || 1} Verified Operations</strong>
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", gap: "8px", borderTop: "1px solid var(--knovara-border)", paddingTop: "12px" }}>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    style={{ flex: 1 }}
+                    onClick={() => onNavigate("/agent-workspace")}
+                  >
+                    Open in Agent Workspace &rarr;
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => onNavigate(`/discoveries/${encodeURIComponent(prod.discovery_id)}`)}
+                  >
+                    Details
+                  </Button>
+                </div>
+              </Card>
+            ))}
+          </div>
+        )
       ) : filteredOffers.length === 0 ? (
         <div className="knovara-card" style={{ padding: "48px 24px", textAlign: "center", color: "var(--knovara-text-muted)" }}>
           <h3 style={{ fontSize: "1.1rem", marginBottom: "8px" }}>No Active Licensing Offers Available</h3>

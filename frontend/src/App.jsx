@@ -11,6 +11,8 @@ import { DashboardPage } from "./pages/DashboardPage.jsx";
 import { MyDiscoveriesPage } from "./pages/MyDiscoveriesPage.jsx";
 import { LicensesPage } from "./pages/LicensesPage.jsx";
 import { AccountPage } from "./pages/AccountPage.jsx";
+import { PublisherPortalPage } from "./pages/PublisherPortalPage.jsx";
+import { AgentWorkspacePage } from "./pages/AgentWorkspacePage.jsx";
 import { ErrorBoundary } from "./components/common/ErrorBoundary.jsx";
 
 export function App() {
@@ -79,6 +81,14 @@ export function App() {
 
     if (path === "/licenses") {
       return <LicensesPage onNavigate={handleNavigate} />;
+    }
+
+    if (path === "/publisher") {
+      return <PublisherPortalPage onNavigate={handleNavigate} />;
+    }
+
+    if (path === "/agent-workspace") {
+      return <AgentWorkspacePage onNavigate={handleNavigate} />;
     }
 
     if (path === "/account") {

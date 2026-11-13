@@ -1,0 +1,12 @@
+{
+  "name": "knovara-mcp-server",
+  "version": "1.0.0",
+  "description": "Model Context Protocol Server for KNOVARA Agent Marketplace",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test test.js"
+  }
+}
+

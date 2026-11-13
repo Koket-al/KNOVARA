@@ -268,6 +268,92 @@ export function prepareExpireLicenseIntent(params) {
 }
 
 /**
+ * Prepares intent for `create_api_subscription_offer`.
+ */
+export function prepareSubscriptionOfferIntent(params) {
+  const {
+    offerId,
+    discoveryId,
+    apiProductId,
+    openapiSpecHash,
+    termsHash,
+    priceYocto,
+  } = params;
+
+  return buildTransactionIntent({
+    methodName: "create_api_subscription_offer",
+    args: {
+      offer_id: offerId,
+      discovery_id: discoveryId,
+      api_product_id: apiProductId,
+      openapi_spec_hash: openapiSpecHash,
+      terms_hash: termsHash,
+      price_yocto: String(priceYocto),
+    },
+    attachedDeposit: "0",
+    gas: DEFAULT_GAS_50_TGAS,
+    context: { offerId, discoveryId, apiProductId, priceYocto },
+  });
+}
+
+/**
+ * Prepares intent for `subscribe_to_offer`.
+ */
+export function prepareSubscribeToOfferIntent(params) {
+  const {
+    subscriptionId,
+    offerId,
+    acceptedTermsHash,
+    exactPriceYocto,
+    agentAccountId,
+  } = params;
+
+  return buildTransactionIntent({
+    methodName: "subscribe_to_offer",
+    args: {
+      subscription_id: subscriptionId,
+      offer_id: offerId,
+      accepted_terms_hash: acceptedTermsHash,
+    },
+    attachedDeposit: String(exactPriceYocto),
+    gas: DEFAULT_GAS_50_TGAS,
+    context: {
+      subscriptionId,
+      offerId,
+      agentAccountId,
+      priceYocto: String(exactPriceYocto),
+    },
+  });
+}
+
+/**
+ * Prepares intent for `renew_subscription`.
+ */
+export function prepareRenewSubscriptionIntent(params) {
+  const {
+    subscriptionId,
+    acceptedTermsHash,
+    exactPriceYocto,
+    agentAccountId,
+  } = params;
+
+  return buildTransactionIntent({
+    methodName: "renew_subscription",
+    args: {
+      subscription_id: subscriptionId,
+      accepted_terms_hash: acceptedTermsHash,
+    },
+    attachedDeposit: String(exactPriceYocto),
+    gas: DEFAULT_GAS_50_TGAS,
+    context: {
+      subscriptionId,
+      agentAccountId,
+      priceYocto: String(exactPriceYocto),
+    },
+  });
+}
+
+/**
  * Prepares intent for `storage_deposit`.
  */
 export function prepareStorageDepositIntent(params = {}) {

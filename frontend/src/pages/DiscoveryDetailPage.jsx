@@ -16,6 +16,7 @@ export function DiscoveryDetailPage({ discoveryId, onNavigate }) {
   const { user } = useAuth();
   const [discovery, setDiscovery] = useState(null);
   const [offers, setOffers] = useState([]);
+  const [apiProducts, setApiProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -31,13 +32,15 @@ export function DiscoveryDetailPage({ discoveryId, onNavigate }) {
       setIsLoading(true);
       setError(null);
 
-      const [discRes, offersRes] = await Promise.all([
+      const [discRes, offersRes, productsRes] = await Promise.all([
         api.getDiscovery(discoveryId),
         api.getDiscoveryOffers(discoveryId).catch(() => ({ offers: [] })),
+        api.getApiProducts(discoveryId).catch(() => ({ products: [] })),
       ]);
 
       setDiscovery(discRes.discovery);
       setOffers(offersRes.offers || []);
+      setApiProducts(productsRes.products || []);
     } catch (err) {
       setError(err.message || "Failed to load discovery details");
     } finally {
@@ -266,6 +269,85 @@ export function DiscoveryDetailPage({ discoveryId, onNavigate }) {
           </table>
         </Card>
       )}
+
+      {/* KNOVARA 2.0: Agent Computational API Products */}
+      <Card
+        title={`AI Agent API Products (${apiProducts.length})`}
+        subtitle="OpenAPI 3.1 computational endpoints and 30-day fixed subscriptions"
+        action={
+          isRightsController && (
+            <Button variant="primary" size="sm" onClick={() => onNavigate("/publisher")}>
+              + Publish API Product
+            </Button>
+          )
+        }
+      >
+        {apiProducts.length === 0 ? (
+          <div style={{ padding: "24px 0", textAlign: "center", color: "var(--knovara-text-muted)" }}>
+            <p style={{ fontSize: "0.875rem" }}>No computational API products published for this discovery yet.</p>
+            {isRightsController && (
+              <Button
+                variant="primary"
+                size="sm"
+                style={{ marginTop: "12px" }}
+                onClick={() => onNavigate("/publisher")}
+              >
+                Publish First API Product for AI Agents &rarr;
+              </Button>
+            )}
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            {apiProducts.map((prod) => (
+              <div
+                key={prod.api_product_id}
+                className="flex-between"
+                style={{
+                  backgroundColor: "var(--knovara-surface)",
+                  padding: "16px",
+                  borderRadius: "var(--radius-sm)",
+                  border: "1px solid rgba(198, 244, 50, 0.25)",
+                  flexWrap: "wrap",
+                  gap: "12px",
+                }}
+              >
+                <div>
+                  <div style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "4px" }}>
+                    <Badge variant="blue">OPENAPI {prod.version || "3.1"}</Badge>
+                    <span style={{ fontWeight: 700, fontSize: "1rem", color: "var(--knovara-lime)" }}>
+                      {prod.monthly_price_near || "1.0"} NEAR / 30 Days
+                    </span>
+                    <Badge variant="success">FIXED PERIOD</Badge>
+                  </div>
+                  <h4 style={{ fontSize: "1rem", margin: "4px 0" }}>{prod.title}</h4>
+                  <p style={{ fontSize: "0.8125rem", color: "var(--knovara-text-secondary)", margin: "4px 0" }}>
+                    {prod.description || "Verifiable computational research API."}
+                  </p>
+                  <div style={{ fontSize: "0.75rem", color: "var(--knovara-text-muted)", marginTop: "4px" }}>
+                    <span>Endpoints: </span>
+                    <strong style={{ color: "#FFFFFF" }}>{prod.endpoints?.length || 1} Verified Operations</strong>
+                    {prod.offer_id && (
+                      <span style={{ marginLeft: "12px" }}>
+                        Offer ID: <code>{prod.offer_id}</code>
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => onNavigate("/agent-workspace")}
+                  >
+                    Open in Agent Workspace &rarr;
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
 
       {/* Active Licensing Offers */}
       <Card

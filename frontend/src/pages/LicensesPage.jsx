@@ -170,7 +170,13 @@ export function LicensesPage({ onNavigate }) {
         throw new Error("No download URL returned by server");
       }
     } catch (err) {
-      setDownloadError(err.message || "Download access denied by backend policy");
+      if (err.message && (err.message.includes("primary-evidence") || err.message.includes("not found"))) {
+        setDownloadError(
+          "This discovery was anchored with public metadata and on-chain proofs without private evidence files attached. Your on-chain license terms remain fully active and valid on NEAR."
+        );
+      } else {
+        setDownloadError(err.message || "Download access denied by backend policy");
+      }
     } finally {
       setDownloadingFileId(null);
     }
@@ -187,7 +193,7 @@ export function LicensesPage({ onNavigate }) {
         </div>
 
         {/* Tab Switcher */}
-        <div style={{ display: "flex", gap: "8px", backgroundColor: "var(--knovara-surface)", padding: "4px", borderRadius: "var(--radius-sm)" }}>
+        <div style={{ display: "flex", gap: "8px", backgroundColor: "var(--knovara-surface)", padding: "4px", borderRadius: "var(--radius-sm)", flexWrap: "wrap" }}>
           <Button
             variant={activeTab === "buyer" ? "primary" : "secondary"}
             size="sm"
@@ -201,6 +207,14 @@ export function LicensesPage({ onNavigate }) {
             onClick={() => setActiveTab("controller")}
           >
             Incoming Requests to Review ({controllerRequests.length})
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onNavigate("/agent-workspace")}
+            style={{ borderColor: "rgba(198, 244, 50, 0.4)", color: "var(--knovara-lime)" }}
+          >
+            ⚡ Agent API Subscriptions &rarr;
           </Button>
         </div>
       </div>

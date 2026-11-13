@@ -13,6 +13,10 @@ import transactionsRouter from "./routes/transactions.js";
 import discoveriesRouter from "./routes/discoveries.js";
 import licensesRouter from "./routes/licenses.js";
 import accountRouter from "./routes/account.js";
+import gatewayRouter from "./routes/gateway.js";
+import apiProductsRouter from "./routes/apiProducts.js";
+import agentRouter from "./routes/agent.js";
+import subscriptionsRouter from "./routes/subscriptions.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 
 /**
@@ -138,6 +142,22 @@ export function createApp(options = {}) {
   // Public NEP-177 Metadata descriptor endpoints
   app.use("/api", metadataRouter);
   app.use("/api/v1", metadataRouter);
+
+  // KNOVARA API Gateway (Protected proxy with SSRF & credential enforcement)
+  app.use("/api/gateway", gatewayRouter);
+  app.use("/api/v1/gateway", gatewayRouter);
+
+  // Publisher API Product and OpenAPI registration
+  app.use("/api/api-products", apiProductsRouter);
+  app.use("/api/v1/api-products", apiProductsRouter);
+
+  // AI Agent Profiles, Recommendations & Purchase Intents
+  app.use("/api/agent", agentRouter);
+  app.use("/api/v1/agent", agentRouter);
+
+  // Subscriptions and Credential Management
+  app.use("/api/subscriptions", subscriptionsRouter);
+  app.use("/api/v1/subscriptions", subscriptionsRouter);
 
   // Allow custom routes registration prior to 404 handler (e.g. for testing middleware)
   if (typeof options.configureRoutes === "function") {

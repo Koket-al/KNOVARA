@@ -1,0 +1,15 @@
+{
+  "name": "knovara-demo-advanced-materials-provider",
+  "version": "1.0.0",
+  "description": "Demonstration Publisher API: Advanced Materials Research",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test test.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
+

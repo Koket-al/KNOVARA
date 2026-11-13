@@ -5,6 +5,8 @@ import { AccountRoyaltyProjection } from "../models/AccountRoyaltyProjection.js"
 import { EvidenceManifest } from "../models/EvidenceManifest.js";
 import { PublicMetadataDescriptor } from "../models/PublicMetadataDescriptor.js";
 import { EvidenceUpload } from "../models/EvidenceUpload.js";
+import { ApiProduct } from "../models/ApiProduct.js";
+import { SubscriptionProjection } from "../models/SubscriptionProjection.js";
 import * as nearContract from "./nearContract.js";
 
 /**
@@ -158,6 +160,15 @@ export async function synchronizeState({
     case "storage_unregister":
       // Handled cleanly by chain state; no specialized projection required
       return { syncStatus: "SYNCED", details: { method: methodName, blockHeight } };
+
+    case "create_api_subscription_offer":
+      return handleSyncSubscriptionOffer({ txResult, events, blockHeight, blockHash });
+
+    case "subscribe_to_offer":
+      return handleSyncSubscriptionActivated({ txResult, events, blockHeight, blockHash });
+
+    case "renew_subscription":
+      return handleSyncSubscriptionRenewed({ txResult, events, blockHeight, blockHash });
 
     default:
       return { syncStatus: "SYNCED", details: { method: methodName } };
@@ -854,4 +865,161 @@ async function handleSyncExpiration({ txResult, events, blockHeight, blockHash }
   );
 
   return { syncStatus: "SYNCED", details: { requestId, status: "Expired" } };
+}
+
+
+/**
+ * Reconciles API subscription offer creation.
+ */
+async function handleSyncSubscriptionOffer({ txResult, events, blockHeight, blockHash }) {
+  const offerEvent = events.find(
+    (e) => e.standard === "knovara_subscription" && e.event === "subscription_offer_created"
+  );
+
+  let offerId = offerEvent?.data?.[0]?.offer_id;
+  let apiProductId = offerEvent?.data?.[0]?.api_product_id;
+
+  if (!offerId) {
+    const action = txResult.transaction?.actions?.find(
+      (a) => a.FunctionCall?.method_name === "create_api_subscription_offer"
+    );
+    if (action) {
+      try {
+        const decoded = JSON.parse(Buffer.from(action.FunctionCall.args, "base64").toString("utf8"));
+        offerId = decoded.offer_id;
+        apiProductId = decoded.api_product_id;
+      } catch (_e) {}
+    }
+  }
+
+  if (!offerId) {
+    return { syncStatus: "RECONCILIATION_REQUIRED", details: { error: "Missing offer_id" } };
+  }
+
+  const onChainOffer = await nearContract.getApiSubscriptionOffer(offerId);
+  if (!onChainOffer) {
+    return { syncStatus: "RECONCILIATION_REQUIRED", details: { error: `Offer '${offerId}' not found on chain` } };
+  }
+
+  if (apiProductId) {
+    await ApiProduct.findOneAndUpdate(
+      { api_product_id: apiProductId },
+      {
+        offer_id: offerId,
+        status: "published",
+        monthly_price_yocto: String(onChainOffer.price_yocto),
+        duration_days: onChainOffer.duration_days,
+        updated_at: new Date(),
+      }
+    );
+  }
+
+  return { syncStatus: "SYNCED", details: { offerId, apiProductId, blockHeight } };
+}
+
+/**
+ * Reconciles atomic API subscription activation.
+ */
+async function handleSyncSubscriptionActivated({ txResult, events, blockHeight, blockHash }) {
+  const subEvent = events.find(
+    (e) => e.standard === "knovara_subscription" && e.event === "subscription_activated"
+  );
+
+  let subscriptionId = subEvent?.data?.[0]?.subscription_id;
+
+  if (!subscriptionId) {
+    const action = txResult.transaction?.actions?.find(
+      (a) => a.FunctionCall?.method_name === "subscribe_to_offer"
+    );
+    if (action) {
+      try {
+        const decoded = JSON.parse(Buffer.from(action.FunctionCall.args, "base64").toString("utf8"));
+        subscriptionId = decoded.subscription_id;
+      } catch (_e) {}
+    }
+  }
+
+  if (!subscriptionId) {
+    return { syncStatus: "RECONCILIATION_REQUIRED", details: { error: "Missing subscription_id" } };
+  }
+
+  const onChainSub = await nearContract.getSubscription(subscriptionId);
+  if (!onChainSub) {
+    return { syncStatus: "RECONCILIATION_REQUIRED", details: { error: `Subscription '${subscriptionId}' not found on chain` } };
+  }
+
+  const activatedAt = new Date(Number(BigInt(onChainSub.activated_at) / 1_000_000n));
+  const expiresAt = new Date(Number(BigInt(onChainSub.expires_at) / 1_000_000n));
+  const isExpired = new Date() > expiresAt;
+
+  await SubscriptionProjection.findOneAndUpdate(
+    { subscription_id: subscriptionId },
+    {
+      subscription_id: subscriptionId,
+      offer_id: onChainSub.offer_id,
+      discovery_id: onChainSub.discovery_id,
+      token_id: onChainSub.token_id,
+      subscriber_id: onChainSub.subscriber_id.toLowerCase(),
+      api_product_id: onChainSub.api_product_id,
+      openapi_spec_hash: onChainSub.openapi_spec_hash,
+      accepted_terms_hash: onChainSub.accepted_terms_hash,
+      price_yocto: String(onChainSub.price_yocto),
+      activated_at: activatedAt,
+      expires_at: expiresAt,
+      status: isExpired ? "Expired" : "Active",
+      block_height: blockHeight,
+      block_hash: blockHash,
+      last_synced_at: new Date(),
+    },
+    { upsert: true, new: true }
+  );
+
+  return { syncStatus: "SYNCED", details: { subscriptionId, status: isExpired ? "Expired" : "Active", blockHeight } };
+}
+
+/**
+ * Reconciles API subscription renewal.
+ */
+async function handleSyncSubscriptionRenewed({ txResult, events, blockHeight, blockHash }) {
+  const renewEvent = events.find(
+    (e) => e.standard === "knovara_subscription" && e.event === "subscription_renewed"
+  );
+
+  let subscriptionId = renewEvent?.data?.[0]?.subscription_id;
+
+  if (!subscriptionId) {
+    const action = txResult.transaction?.actions?.find(
+      (a) => a.FunctionCall?.method_name === "renew_subscription"
+    );
+    if (action) {
+      try {
+        const decoded = JSON.parse(Buffer.from(action.FunctionCall.args, "base64").toString("utf8"));
+        subscriptionId = decoded.subscription_id;
+      } catch (_e) {}
+    }
+  }
+
+  if (!subscriptionId) {
+    return { syncStatus: "RECONCILIATION_REQUIRED", details: { error: "Missing subscription_id" } };
+  }
+
+  const onChainSub = await nearContract.getSubscription(subscriptionId);
+  if (!onChainSub) {
+    return { syncStatus: "RECONCILIATION_REQUIRED", details: { error: `Subscription '${subscriptionId}' not found on chain` } };
+  }
+
+  const expiresAt = new Date(Number(BigInt(onChainSub.expires_at) / 1_000_000n));
+
+  await SubscriptionProjection.findOneAndUpdate(
+    { subscription_id: subscriptionId },
+    {
+      expires_at: expiresAt,
+      status: "Active",
+      block_height: blockHeight,
+      block_hash: blockHash,
+      last_synced_at: new Date(),
+    }
+  );
+
+  return { syncStatus: "SYNCED", details: { subscriptionId, renewed: true, expiresAt, blockHeight } };
 }

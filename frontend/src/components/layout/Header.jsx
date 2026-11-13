@@ -28,18 +28,19 @@ export function Header({ currentPath = "/", onNavigate }) {
 
   const unauthNavLinks = [
     { label: "Discoveries", path: "/discoveries" },
-    { label: "Marketplace", path: "/marketplace" },
-    { label: "Register Discovery", path: "/register" },
+    { label: "Marketplace & APIs", path: "/marketplace" },
+    { label: "Agent Workspace", path: "/agent-workspace", badge: "AI AGENTS" },
+    { label: "Publisher", path: "/publisher", badge: "API" },
   ];
 
   const authNavLinks = [
     { label: "Dashboard", path: "/dashboard" },
-    { label: "Discoveries", path: "/discoveries" },
-    { label: "Marketplace", path: "/marketplace" },
+    { label: "Marketplace & APIs", path: "/marketplace" },
+    { label: "Agent Workspace", path: "/agent-workspace", badge: "AI AGENTS" },
+    { label: "Publisher", path: "/publisher", badge: "API" },
     { label: "My Discoveries", path: "/my-discoveries" },
-    { label: "Register Discovery", path: "/register" },
     { label: "Licenses", path: "/licenses" },
-    { label: "Account & Storage", path: "/account" },
+    { label: "Account", path: "/account" },
   ];
 
   const activeNavLinks = isAuthenticated ? authNavLinks : unauthNavLinks;
@@ -136,14 +137,33 @@ export function Header({ currentPath = "/", onNavigate }) {
                 letterSpacing: "0.03em",
                 whiteSpace: "nowrap",
                 flexShrink: 0,
-                color: currentPath === link.path ? "var(--knovara-blue-primary)" : "var(--knovara-text-secondary)",
-                borderBottom: currentPath === link.path ? "2px solid var(--knovara-blue-primary)" : "2px solid transparent",
+                color: currentPath === link.path ? "var(--knovara-lime)" : "var(--knovara-text-secondary)",
+                borderBottom: currentPath === link.path ? "2px solid var(--knovara-lime)" : "2px solid transparent",
                 padding: "8px 2px",
                 textDecoration: "none",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
                 transition: "color 0.15s ease, border-color 0.15s ease",
               }}
             >
-              {link.label}
+              <span>{link.label}</span>
+              {link.badge && (
+                <span
+                  style={{
+                    fontSize: "0.625rem",
+                    padding: "2px 5px",
+                    borderRadius: "4px",
+                    background: "rgba(198, 244, 50, 0.16)",
+                    color: "var(--knovara-lime)",
+                    border: "1px solid rgba(198, 244, 50, 0.35)",
+                    fontWeight: 700,
+                    letterSpacing: "0.05em",
+                  }}
+                >
+                  {link.badge}
+                </span>
+              )}
             </a>
           ))}
         </nav>
@@ -218,12 +238,30 @@ export function Header({ currentPath = "/", onNavigate }) {
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: "0.875rem",
-                color: currentPath === link.path ? "var(--knovara-blue-primary)" : "var(--knovara-text-primary)",
+                color: currentPath === link.path ? "var(--knovara-lime)" : "var(--knovara-text-primary)",
                 padding: "8px 0",
                 textDecoration: "none",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
               }}
             >
-              {link.label}
+              <span>{link.label}</span>
+              {link.badge && (
+                <span
+                  style={{
+                    fontSize: "0.625rem",
+                    padding: "2px 6px",
+                    borderRadius: "4px",
+                    background: "rgba(198, 244, 50, 0.16)",
+                    color: "var(--knovara-lime)",
+                    border: "1px solid rgba(198, 244, 50, 0.35)",
+                    fontWeight: 700,
+                  }}
+                >
+                  {link.badge}
+                </span>
+              )}
             </a>
           ))}
         </div>

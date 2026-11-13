@@ -416,3 +416,31 @@ export async function getLicenseRequestsForDiscovery(discoveryId, options = {}) 
 export async function getLicenseRequestsForOffer(offerId, options = {}) {
   return callViewMethod("get_license_requests_for_offer", { offer_id: offerId }, options);
 }
+
+/**
+ * Retrieves API subscription offer details by offer ID.
+ */
+export async function getApiSubscriptionOffer(offerId, options = {}) {
+  return callViewMethod("get_api_subscription_offer", { offer_id: offerId }, options);
+}
+
+/**
+ * Retrieves all API subscription offers associated with a discovery.
+ */
+export async function getSubscriptionOffersByDiscovery(discoveryId, options = {}) {
+  return callViewMethod("get_subscription_offers_by_discovery", { discovery_id: discoveryId }, options);
+}
+
+/**
+ * Retrieves active subscription details by subscription ID.
+ */
+export async function getSubscription(subscriptionId, options = {}) {
+  return callViewMethod("get_subscription", { subscription_id: subscriptionId }, options);
+}
+
+/**
+ * Retrieves all subscriptions held by a dedicated agent account.
+ */
+export async function getSubscriptionsByAgent(agentId, options = {}) {
+  return callViewMethod("get_subscriptions_by_agent", { agent_id: agentId }, options);
+}

@@ -291,6 +291,116 @@ export const api = {
   async getTransactionStatus(txHash) {
     return request(`/transactions/${encodeURIComponent(txHash)}`, { method: "GET" });
   },
+
+  // ---------------------------------------------------------------------------
+  // KNOVARA 2.0: AGENT-NATIVE MARKETPLACE & GATEWAY APIS
+  // ---------------------------------------------------------------------------
+  async getApiProducts(discoveryId = null) {
+    const query = discoveryId ? `?discovery_id=${encodeURIComponent(discoveryId)}` : "";
+    return request(`/api-products${query}`, { method: "GET" });
+  },
+
+  async getApiProduct(apiProductId) {
+    return request(`/api-products/${encodeURIComponent(apiProductId)}`, { method: "GET" });
+  },
+
+  async createApiProduct(payload) {
+    return request("/api-products", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async setProviderConfig(apiProductId, payload) {
+    return request(`/api-products/${encodeURIComponent(apiProductId)}/provider-config`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async prepareSubscriptionOfferIntent(apiProductId, termsHash = null) {
+    return request(`/api-products/${encodeURIComponent(apiProductId)}/prepare-offer-intent`, {
+      method: "POST",
+      body: JSON.stringify({ terms_hash: termsHash }),
+    });
+  },
+
+  async getAgentProfiles(ownerAccountId = null) {
+    const query = ownerAccountId ? `?owner_account_id=${encodeURIComponent(ownerAccountId)}` : "";
+    return request(`/agent/profiles${query}`, { method: "GET" });
+  },
+
+  async createAgentProfile(payload) {
+    return request("/agent/profiles", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async getAgentRecommendations({ query = "", category = "", maxPriceNear = null } = {}) {
+    return request("/agent/recommendations", {
+      method: "POST",
+      body: JSON.stringify({
+        query,
+        category,
+        max_price_near: maxPriceNear ? Number(maxPriceNear) : undefined,
+      }),
+    });
+  },
+
+  async prepareAgentIntent({ agentId, discoveryId, apiProductId = null }) {
+    return request("/agent/prepare-intent", {
+      method: "POST",
+      body: JSON.stringify({
+        agent_id: agentId,
+        discovery_id: discoveryId,
+        api_product_id: apiProductId,
+      }),
+    });
+  },
+
+  async getSubscription(subscriptionId) {
+    return request(`/subscriptions/${encodeURIComponent(subscriptionId)}`, { method: "GET" });
+  },
+
+  async issueSubscriptionCredential(subscriptionId) {
+    return request(`/subscriptions/${encodeURIComponent(subscriptionId)}/issue-credential`, {
+      method: "POST",
+      body: JSON.stringify({}),
+    });
+  },
+
+  async rotateCredential(credentialId) {
+    return request(`/agent/credentials/${encodeURIComponent(credentialId)}/rotate`, {
+      method: "POST",
+      body: JSON.stringify({}),
+    });
+  },
+
+  async revokeCredential(credentialId) {
+    return request(`/agent/credentials/${encodeURIComponent(credentialId)}/revoke`, {
+      method: "POST",
+      body: JSON.stringify({}),
+    });
+  },
+
+  async callGatewayOperation(assetId, operationId, bearerToken, body = {}) {
+    const baseUrl = config.BACKEND_API_URL || "";
+    const url = `${baseUrl}/api/v1/gateway/assets/${encodeURIComponent(assetId)}/operations/${encodeURIComponent(operationId)}`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${bearerToken}`,
+      },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || `Gateway returned status ${res.status}`);
+    }
+    return data;
+  },
 };
 
 /**
@@ -434,6 +544,52 @@ export function buildClientTransactionIntent(action, payload = {}) {
         attachedDeposit: "0",
         gas: "40000000000000",
         context: {},
+      };
+
+    case "create-subscription-offer":
+      return {
+        networkId,
+        contractId,
+        methodName: "create_api_subscription_offer",
+        args: {
+          offer_id: payload.offerId,
+          discovery_id: payload.discoveryId,
+          api_product_id: payload.apiProductId,
+          openapi_spec_hash: payload.openapiSpecHash,
+          terms_hash: payload.termsHash,
+          price: String(payload.priceYocto),
+        },
+        attachedDeposit: "0",
+        gas: DEFAULT_GAS_30_TGAS,
+        context: { offerId: payload.offerId, discoveryId: payload.discoveryId },
+      };
+
+    case "subscribe-to-offer":
+      return {
+        networkId,
+        contractId,
+        methodName: "subscribe_to_offer",
+        args: {
+          subscription_id: payload.subscriptionId,
+          offer_id: payload.offerId,
+          accepted_terms_hash: payload.acceptedTermsHash,
+        },
+        attachedDeposit: String(payload.priceYocto || payload.exactPriceYocto || "0"),
+        gas: DEFAULT_GAS_50_TGAS,
+        context: { subscriptionId: payload.subscriptionId, offerId: payload.offerId },
+      };
+
+    case "renew-subscription":
+      return {
+        networkId,
+        contractId,
+        methodName: "renew_subscription",
+        args: {
+          subscription_id: payload.subscriptionId,
+        },
+        attachedDeposit: String(payload.priceYocto || "0"),
+        gas: DEFAULT_GAS_50_TGAS,
+        context: { subscriptionId: payload.subscriptionId },
       };
 
     default:

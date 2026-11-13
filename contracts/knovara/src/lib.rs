@@ -11,12 +11,14 @@ pub mod license;
 pub mod nft;
 pub mod payments;
 pub mod storage;
+pub mod subscription;
 
 pub use discovery::*;
 pub use events::*;
 pub use license::*;
 pub use nft::*;
 pub use storage::*;
+pub use subscription::*;
 
 /// Strongly typed storage keys for modern `near_sdk::store` collections.
 #[derive(BorshStorageKey)]
@@ -34,6 +36,10 @@ pub enum StorageKey {
     DiscoveryToOffers,
     DiscoveryToRequests,
     OfferToRequests,
+    ApiSubscriptionOffers,
+    SubscriptionRecords,
+    DiscoveryToSubscriptionOffers,
+    AgentToSubscriptions,
 }
 
 /// The core KNOVARA contract state.
@@ -55,6 +61,10 @@ pub struct KnovaraContract {
     pub discovery_to_offers: LookupMap<String, Vec<String>>,
     pub discovery_to_requests: LookupMap<String, Vec<String>>,
     pub offer_to_requests: LookupMap<String, Vec<String>>,
+    pub api_subscription_offers: LookupMap<String, ApiSubscriptionOfferInternal>,
+    pub subscription_records: LookupMap<String, SubscriptionRecordInternal>,
+    pub discovery_to_subscription_offers: LookupMap<String, Vec<String>>,
+    pub agent_to_subscriptions: LookupMap<AccountId, Vec<String>>,
     pub total_royalty_liabilities: u128,
     pub pending_royalty_withdrawals: u128,
 }
@@ -94,6 +104,12 @@ impl KnovaraContract {
             discovery_to_offers: LookupMap::new(StorageKey::DiscoveryToOffers),
             discovery_to_requests: LookupMap::new(StorageKey::DiscoveryToRequests),
             offer_to_requests: LookupMap::new(StorageKey::OfferToRequests),
+            api_subscription_offers: LookupMap::new(StorageKey::ApiSubscriptionOffers),
+            subscription_records: LookupMap::new(StorageKey::SubscriptionRecords),
+            discovery_to_subscription_offers: LookupMap::new(
+                StorageKey::DiscoveryToSubscriptionOffers,
+            ),
+            agent_to_subscriptions: LookupMap::new(StorageKey::AgentToSubscriptions),
             total_royalty_liabilities: 0,
             pending_royalty_withdrawals: 0,
         };

@@ -8,6 +8,9 @@ pub const NEP171_VERSION: &str = "1.2.0";
 pub const KNOVARA_LICENSING_STANDARD: &str = "knovara_licensing";
 pub const KNOVARA_LICENSING_VERSION: &str = "1.0.0";
 
+pub const KNOVARA_SUBSCRIPTION_STANDARD: &str = "knovara_subscription";
+pub const KNOVARA_SUBSCRIPTION_VERSION: &str = "2.0.0";
+
 /// Emits a standard NEP-297 compliant `nft_mint` event.
 /// Format: `EVENT_JSON:{"standard":"nep171","version":"1.2.0","event":"nft_mint","data":[{"owner_id":"...","token_ids":["..."],"memo":...}]}`
 pub fn log_nft_mint(owner_id: &AccountId, token_ids: &[&str], memo: Option<&str>) {
@@ -279,6 +282,85 @@ pub fn log_license_request_expired(request_id: &str, discovery_id: &str, buyer_i
             "request_id": request_id,
             "discovery_id": discovery_id,
             "buyer_id": buyer_id.to_string()
+        }]
+    });
+    env::log_str(&format!("EVENT_JSON:{}", event));
+}
+
+/// Emits a structured event when an API subscription offer is created.
+pub fn log_subscription_offer_created(
+    offer_id: &str,
+    discovery_id: &str,
+    rights_controller_id: &AccountId,
+    api_product_id: &str,
+    price_yocto: u128,
+    terms_hash: &str,
+    openapi_spec_hash: &str,
+    duration_days: u32,
+) {
+    let event = json!({
+        "standard": KNOVARA_SUBSCRIPTION_STANDARD,
+        "version": KNOVARA_SUBSCRIPTION_VERSION,
+        "event": "subscription_offer_created",
+        "data": [{
+            "offer_id": offer_id,
+            "discovery_id": discovery_id,
+            "rights_controller_id": rights_controller_id.to_string(),
+            "api_product_id": api_product_id,
+            "price_yocto": U128(price_yocto),
+            "terms_hash": terms_hash,
+            "openapi_spec_hash": openapi_spec_hash,
+            "duration_days": duration_days
+        }]
+    });
+    env::log_str(&format!("EVENT_JSON:{}", event));
+}
+
+/// Emits a structured event when an API subscription is atomically purchased and activated.
+pub fn log_subscription_activated(
+    subscription_id: &str,
+    offer_id: &str,
+    discovery_id: &str,
+    subscriber_id: &AccountId,
+    api_product_id: &str,
+    price_yocto: u128,
+    activated_at: u64,
+    expires_at: u64,
+) {
+    let event = json!({
+        "standard": KNOVARA_SUBSCRIPTION_STANDARD,
+        "version": KNOVARA_SUBSCRIPTION_VERSION,
+        "event": "subscription_activated",
+        "data": [{
+            "subscription_id": subscription_id,
+            "offer_id": offer_id,
+            "discovery_id": discovery_id,
+            "subscriber_id": subscriber_id.to_string(),
+            "api_product_id": api_product_id,
+            "price_yocto": U128(price_yocto),
+            "activated_at": U64(activated_at),
+            "expires_at": U64(expires_at)
+        }]
+    });
+    env::log_str(&format!("EVENT_JSON:{}", event));
+}
+
+/// Emits a structured event when an API subscription is renewed.
+pub fn log_subscription_renewed(
+    subscription_id: &str,
+    subscriber_id: &AccountId,
+    price_yocto: u128,
+    new_expires_at: u64,
+) {
+    let event = json!({
+        "standard": KNOVARA_SUBSCRIPTION_STANDARD,
+        "version": KNOVARA_SUBSCRIPTION_VERSION,
+        "event": "subscription_renewed",
+        "data": [{
+            "subscription_id": subscription_id,
+            "subscriber_id": subscriber_id.to_string(),
+            "price_yocto": U128(price_yocto),
+            "new_expires_at": U64(new_expires_at)
         }]
     });
     env::log_str(&format!("EVENT_JSON:{}", event));
