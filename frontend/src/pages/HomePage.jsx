@@ -222,23 +222,23 @@ export function HomePage({ onNavigate }) {
             <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "8px" }}>
               <div className="flex-between" style={{ padding: "8px 10px", background: "rgba(255, 255, 255, 0.03)", borderRadius: "var(--radius-xs)", border: "1px solid rgba(255, 255, 255, 0.05)" }}>
                 <div>
-                  <div style={{ fontSize: "0.8125rem", fontWeight: 600, color: "#FFFFFF" }}>agent-explorer.testnet</div>
+                  <div style={{ fontSize: "0.8125rem", fontWeight: 600, color: "var(--knovara-text-primary)" }}>agent-explorer.testnet</div>
                   <div style={{ fontSize: "0.75rem", color: "var(--knovara-text-muted)" }}>Aerospace Alloys API</div>
                 </div>
                 <Badge variant="success">ACTIVE SUB</Badge>
               </div>
 
-              <div className="flex-between" style={{ padding: "8px 10px", background: "rgba(255, 255, 255, 0.03)", borderRadius: "var(--radius-xs)", border: "1px solid rgba(255, 255, 255, 0.05)" }}>
+              <div className="flex-between" style={{ padding: "8px 10px", background: "rgba(24, 24, 27, 0.05)", borderRadius: "var(--radius-xs)", border: "1px solid var(--knovara-border)" }}>
                 <div>
-                  <div style={{ fontSize: "0.8125rem", fontWeight: 600, color: "#FFFFFF" }}>disc-mat-001</div>
+                  <div style={{ fontSize: "0.8125rem", fontWeight: 600, color: "var(--knovara-text-primary)" }}>disc-mat-001</div>
                   <div style={{ fontSize: "0.75rem", color: "var(--knovara-text-muted)" }}>MMPDS-01 Metallurgy</div>
                 </div>
                 <Badge variant="blue">VERIFIED</Badge>
               </div>
 
-              <div className="flex-between" style={{ padding: "8px 10px", background: "rgba(255, 255, 255, 0.03)", borderRadius: "var(--radius-xs)", border: "1px solid rgba(255, 255, 255, 0.05)" }}>
+              <div className="flex-between" style={{ padding: "8px 10px", background: "rgba(24, 24, 27, 0.05)", borderRadius: "var(--radius-xs)", border: "1px solid var(--knovara-border)" }}>
                 <div>
-                  <div style={{ fontSize: "0.8125rem", fontWeight: 600, color: "#FFFFFF" }}>knov_live_72cb0eb2</div>
+                  <div style={{ fontSize: "0.8125rem", fontWeight: 600, color: "var(--knovara-text-primary)" }}>knov_live_72cb0eb2</div>
                   <div style={{ fontSize: "0.75rem", color: "var(--knovara-text-muted)" }}>1.0 NEAR / 30 Days</div>
                 </div>
                 <Badge variant="success">STREAMING</Badge>
@@ -251,10 +251,10 @@ export function HomePage({ onNavigate }) {
             title="• Gateway & Protocol Health"
             subtitle="Auto-audit & SSRF firewall enabled"
             interactive
-            style={{ backgroundColor: "var(--knovara-surface-card)", borderColor: "rgba(198, 244, 50, 0.4)", boxShadow: "var(--glow-lime-subtle)" }}
+            style={{ backgroundColor: "var(--knovara-surface-card)", borderColor: "var(--knovara-border-lime)", boxShadow: "var(--glow-lime-subtle)" }}
           >
             <div style={{ display: "flex", alignItems: "baseline", gap: "8px", margin: "10px 0" }}>
-              <span style={{ fontSize: "3rem", fontWeight: 800, color: "var(--knovara-lime)", fontFamily: "var(--font-heading)", lineHeight: 1 }}>
+              <span style={{ fontSize: "3rem", fontWeight: 800, color: "#18181B", textShadow: "0 0 16px #C6F432, 0 0 35px rgba(198, 244, 50, 0.8)", fontFamily: "var(--font-heading)", lineHeight: 1 }}>
                 99.9
               </span>
               <span style={{ fontSize: "0.8125rem", color: "var(--knovara-text-muted)" }}>
@@ -267,7 +267,7 @@ export function HomePage({ onNavigate }) {
               <svg viewBox="0 0 200 60" style={{ width: "100%", height: "100%", overflow: "visible" }}>
                 <defs>
                   <linearGradient id="limeGlowGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stopColor="#C6F432" stopOpacity="0.35" />
+                    <stop offset="0%" stopColor="#C6F432" stopOpacity="0.45" />
                     <stop offset="100%" stopColor="#C6F432" stopOpacity="0.0" />
                   </linearGradient>
                 </defs>
@@ -278,11 +278,11 @@ export function HomePage({ onNavigate }) {
                 <path
                   d="M0,50 Q40,42 70,35 T130,22 T170,14 T200,8"
                   fill="none"
-                  stroke="#C6F432"
+                  stroke="#7CA90B"
                   strokeWidth="2.5"
                   strokeLinecap="round"
                 />
-                <circle cx="200" cy="8" r="4" fill="#C6F432" filter="drop-shadow(0 0 6px #C6F432)" />
+                <circle cx="200" cy="8" r="4" fill="#C6F432" stroke="#18181B" strokeWidth="1" filter="drop-shadow(0 0 8px #C6F432)" />
               </svg>
             </div>
             <div style={{ fontSize: "0.75rem", color: "var(--knovara-text-muted)", marginTop: "6px", textAlign: "right" }}>
@@ -295,27 +295,27 @@ export function HomePage({ onNavigate }) {
             title="• Agent Subscription Lifecycle"
             subtitle="Cryptographic authorization"
             interactive
-            style={{ backgroundColor: "var(--knovara-surface-card)", borderColor: "rgba(255, 255, 255, 0.18)" }}
+            style={{ backgroundColor: "var(--knovara-surface-card)", borderColor: "var(--knovara-border)" }}
           >
             <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "14px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <span style={{ width: "80px", fontSize: "0.75rem", color: "var(--knovara-text-muted)" }}>01. Discovery</span>
-                <div style={{ flex: 1, height: "10px", background: "rgba(255, 255, 255, 0.08)", borderRadius: "var(--radius-pill)", overflow: "hidden" }}>
-                  <div style={{ width: "100%", height: "100%", background: "#FFFFFF", borderRadius: "var(--radius-pill)" }} />
+                <div style={{ flex: 1, height: "10px", background: "rgba(24, 24, 27, 0.08)", borderRadius: "var(--radius-pill)", overflow: "hidden" }}>
+                  <div style={{ width: "100%", height: "100%", background: "#18181B", borderRadius: "var(--radius-pill)" }} />
                 </div>
               </div>
 
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <span style={{ width: "80px", fontSize: "0.75rem", color: "var(--knovara-text-muted)" }}>02. Approval</span>
-                <div style={{ flex: 1, height: "10px", background: "rgba(255, 255, 255, 0.08)", borderRadius: "var(--radius-pill)", overflow: "hidden" }}>
-                  <div style={{ width: "100%", height: "100%", background: "var(--knovara-lime)", borderRadius: "var(--radius-pill)" }} />
+                <div style={{ flex: 1, height: "10px", background: "rgba(24, 24, 27, 0.08)", borderRadius: "var(--radius-pill)", overflow: "hidden" }}>
+                  <div style={{ width: "100%", height: "100%", background: "var(--knovara-lime)", borderRadius: "var(--radius-pill)", boxShadow: "0 0 10px #C6F432" }} />
                 </div>
               </div>
 
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <span style={{ width: "80px", fontSize: "0.75rem", color: "var(--knovara-text-muted)" }}>03. Gateway</span>
-                <div style={{ flex: 1, height: "10px", background: "rgba(255, 255, 255, 0.08)", borderRadius: "var(--radius-pill)", overflow: "hidden" }}>
-                  <div style={{ width: "95%", height: "100%", background: "var(--knovara-lime)", borderRadius: "var(--radius-pill)", boxShadow: "0 0 10px var(--knovara-lime)" }} />
+                <div style={{ flex: 1, height: "10px", background: "rgba(24, 24, 27, 0.08)", borderRadius: "var(--radius-pill)", overflow: "hidden" }}>
+                  <div style={{ width: "95%", height: "100%", background: "var(--knovara-lime)", borderRadius: "var(--radius-pill)", boxShadow: "0 0 14px #C6F432" }} />
                 </div>
               </div>
             </div>

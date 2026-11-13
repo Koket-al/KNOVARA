@@ -48,7 +48,7 @@ export function Header({ currentPath = "/", onNavigate }) {
   return (
     <header
       style={{
-        backgroundColor: "rgba(56, 57, 60, 0.88)",
+        backgroundColor: "rgba(213, 206, 162, 0.92)",
         backdropFilter: "blur(14px)",
         borderBottom: "1px solid var(--knovara-border)",
         position: "sticky",
@@ -85,12 +85,12 @@ export function Header({ currentPath = "/", onNavigate }) {
                 fontFamily: "var(--font-heading)",
                 fontSize: "1.5rem",
                 fontWeight: 900,
-                color: "#FFFFFF",
+                color: "var(--knovara-text-primary)",
                 letterSpacing: "-0.03em",
                 whiteSpace: "nowrap",
               }}
             >
-              KNOVARA<span style={{ color: "var(--knovara-lime)" }}>.</span>
+              KNOVARA<span style={{ color: "var(--knovara-lime)", textShadow: "0 0 10px #C6F432" }}>.</span>
             </span>
           </a>
           <span
@@ -137,14 +137,17 @@ export function Header({ currentPath = "/", onNavigate }) {
                 letterSpacing: "0.03em",
                 whiteSpace: "nowrap",
                 flexShrink: 0,
-                color: currentPath === link.path ? "var(--knovara-lime)" : "var(--knovara-text-secondary)",
-                borderBottom: currentPath === link.path ? "2px solid var(--knovara-lime)" : "2px solid transparent",
-                padding: "8px 2px",
+                color: currentPath === link.path ? "#18181B" : "var(--knovara-text-secondary)",
+                borderBottom: currentPath === link.path ? "2px solid #18181B" : "2px solid transparent",
+                backgroundColor: currentPath === link.path ? "rgba(198, 244, 50, 0.4)" : "transparent",
+                padding: "6px 12px",
+                borderRadius: "var(--radius-sm)",
+                boxShadow: currentPath === link.path ? "0 0 12px rgba(198, 244, 50, 0.6)" : "none",
                 textDecoration: "none",
                 display: "inline-flex",
                 alignItems: "center",
                 gap: "6px",
-                transition: "color 0.15s ease, border-color 0.15s ease",
+                transition: "all 0.15s ease",
               }}
             >
               <span>{link.label}</span>
@@ -152,13 +155,14 @@ export function Header({ currentPath = "/", onNavigate }) {
                 <span
                   style={{
                     fontSize: "0.625rem",
-                    padding: "2px 5px",
+                    padding: "2px 6px",
                     borderRadius: "4px",
-                    background: "rgba(198, 244, 50, 0.16)",
-                    color: "var(--knovara-lime)",
-                    border: "1px solid rgba(198, 244, 50, 0.35)",
-                    fontWeight: 700,
+                    background: "var(--knovara-lime)",
+                    color: "#18181B",
+                    border: "1px solid #98C414",
+                    fontWeight: 800,
                     letterSpacing: "0.05em",
+                    boxShadow: "0 0 8px rgba(198, 244, 50, 0.6)",
                   }}
                 >
                   {link.badge}
@@ -238,8 +242,10 @@ export function Header({ currentPath = "/", onNavigate }) {
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: "0.875rem",
-                color: currentPath === link.path ? "var(--knovara-lime)" : "var(--knovara-text-primary)",
-                padding: "8px 0",
+                color: currentPath === link.path ? "#18181B" : "var(--knovara-text-primary)",
+                backgroundColor: currentPath === link.path ? "rgba(198, 244, 50, 0.4)" : "transparent",
+                padding: "8px 12px",
+                borderRadius: "var(--radius-sm)",
                 textDecoration: "none",
                 display: "flex",
                 alignItems: "center",
@@ -253,10 +259,10 @@ export function Header({ currentPath = "/", onNavigate }) {
                     fontSize: "0.625rem",
                     padding: "2px 6px",
                     borderRadius: "4px",
-                    background: "rgba(198, 244, 50, 0.16)",
-                    color: "var(--knovara-lime)",
-                    border: "1px solid rgba(198, 244, 50, 0.35)",
-                    fontWeight: 700,
+                    background: "var(--knovara-lime)",
+                    color: "#18181B",
+                    border: "1px solid #98C414",
+                    fontWeight: 800,
                   }}
                 >
                   {link.badge}

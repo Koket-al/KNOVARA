@@ -325,7 +325,7 @@ export function DiscoveryDetailPage({ discoveryId, onNavigate }) {
                   </p>
                   <div style={{ fontSize: "0.75rem", color: "var(--knovara-text-muted)", marginTop: "4px" }}>
                     <span>Endpoints: </span>
-                    <strong style={{ color: "#FFFFFF" }}>{prod.endpoints?.length || 1} Verified Operations</strong>
+                    <strong style={{ color: "var(--knovara-text-primary)" }}>{prod.endpoints?.length || 1} Verified Operations</strong>
                     {prod.offer_id && (
                       <span style={{ marginLeft: "12px" }}>
                         Offer ID: <code>{prod.offer_id}</code>

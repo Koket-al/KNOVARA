@@ -151,7 +151,8 @@ export function MarketplacePage({ onNavigate }) {
               fontFamily: "var(--font-mono)",
               cursor: "pointer",
               background: activeMarketTab === "api-products" ? "var(--knovara-lime)" : "transparent",
-              color: activeMarketTab === "api-products" ? "#0B0B0C" : "var(--knovara-text-secondary)",
+              color: activeMarketTab === "api-products" ? "#18181B" : "var(--knovara-text-secondary)",
+              boxShadow: activeMarketTab === "api-products" ? "0 0 14px rgba(198, 244, 50, 0.7)" : "none",
               transition: "all 0.15s ease",
             }}
           >
@@ -169,7 +170,8 @@ export function MarketplacePage({ onNavigate }) {
               fontFamily: "var(--font-mono)",
               cursor: "pointer",
               background: activeMarketTab === "offers" ? "var(--knovara-lime)" : "transparent",
-              color: activeMarketTab === "offers" ? "#0B0B0C" : "var(--knovara-text-secondary)",
+              color: activeMarketTab === "offers" ? "#18181B" : "var(--knovara-text-secondary)",
+              boxShadow: activeMarketTab === "offers" ? "0 0 14px rgba(198, 244, 50, 0.7)" : "none",
               transition: "all 0.15s ease",
             }}
           >
@@ -262,7 +264,7 @@ export function MarketplacePage({ onNavigate }) {
                     )}
                     <div>
                       <span style={{ color: "var(--knovara-text-muted)" }}>Endpoints: </span>
-                      <strong style={{ color: "#FFFFFF" }}>{prod.endpoints?.length || prod.endpoints_count || 1} Verified Operations</strong>
+                      <strong style={{ color: "var(--knovara-text-primary)" }}>{prod.endpoints?.length || prod.endpoints_count || 1} Verified Operations</strong>
                     </div>
                   </div>
                 </div>

@@ -156,7 +156,7 @@ export function PublisherPortalPage({ onNavigate }) {
   return (
     <div style={{ maxWidth: "1000px", margin: "0 auto", padding: "24px 16px" }}>
       <div style={{ marginBottom: "32px" }}>
-        <h1 style={{ fontSize: "2.25rem", fontWeight: 900, color: "#FFFFFF", marginBottom: "8px" }}>
+        <h1 style={{ fontSize: "2.25rem", fontWeight: 900, color: "var(--knovara-text-primary)", marginBottom: "8px" }}>
           Publisher Portal<span style={{ color: "var(--knovara-lime)" }}>.</span>
         </h1>
         <p style={{ color: "var(--knovara-text-secondary)", fontSize: "1.0625rem" }}>
@@ -169,7 +169,7 @@ export function PublisherPortalPage({ onNavigate }) {
         <Card style={{ marginBottom: "24px", borderColor: "var(--knovara-border-lime)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
             <div>
-              <h3 style={{ color: "#FFFFFF", fontSize: "1.125rem", margin: "0 0 4px 0" }}>
+              <h3 style={{ color: "var(--knovara-text-primary)", fontSize: "1.125rem", margin: "0 0 4px 0" }}>
                 Connect Rights Controller Wallet
               </h3>
               <p style={{ color: "var(--knovara-text-secondary)", fontSize: "0.875rem", margin: 0 }}>
@@ -215,8 +215,8 @@ export function PublisherPortalPage({ onNavigate }) {
                   style={{
                     width: "100%",
                     padding: "12px",
-                    background: "var(--knovara-surface)",
-                    color: "#FFFFFF",
+                    background: "var(--knovara-surface-card)",
+                    color: "var(--knovara-text-primary)",
                     border: "1px solid var(--knovara-border)",
                     borderRadius: "var(--radius-sm)",
                   }}
@@ -280,8 +280,8 @@ export function PublisherPortalPage({ onNavigate }) {
               width: "100%",
               fontFamily: "var(--font-mono)",
               fontSize: "0.8125rem",
-              background: "var(--knovara-bg)",
-              color: "#FFFFFF",
+              background: "var(--knovara-surface-card)",
+              color: "var(--knovara-text-primary)",
               border: "1px solid var(--knovara-border)",
               borderRadius: "var(--radius-sm)",
               padding: "12px",

@@ -239,7 +239,7 @@ export function AgentWorkspacePage({ onNavigate }) {
   return (
     <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "24px 16px" }}>
       <div style={{ marginBottom: "32px" }}>
-        <h1 style={{ fontSize: "2.25rem", fontWeight: 900, color: "#FFFFFF", marginBottom: "8px" }}>
+        <h1 style={{ fontSize: "2.25rem", fontWeight: 900, color: "var(--knovara-text-primary)", marginBottom: "8px" }}>
           AI Agent Task Workspace<span style={{ color: "var(--knovara-lime)" }}>.</span>
         </h1>
         <p style={{ color: "var(--knovara-text-secondary)", fontSize: "1.0625rem" }}>
@@ -279,8 +279,8 @@ export function AgentWorkspacePage({ onNavigate }) {
                 style={{
                   width: "100%",
                   padding: "12px",
-                  background: "var(--knovara-surface)",
-                  color: "#FFFFFF",
+                  background: "var(--knovara-surface-card)",
+                  color: "var(--knovara-text-primary)",
                   border: "1px solid var(--knovara-border)",
                   borderRadius: "var(--radius-sm)",
                 }}
@@ -350,7 +350,7 @@ export function AgentWorkspacePage({ onNavigate }) {
                 transition: "all 0.2s ease",
               }}
             >
-              <h4 style={{ color: "#FFFFFF", margin: "0 0 6px 0", fontSize: "1rem" }}>{task.title}</h4>
+              <h4 style={{ color: "var(--knovara-text-primary)", margin: "0 0 6px 0", fontSize: "1rem" }}>{task.title}</h4>
               <p style={{ color: "var(--knovara-text-secondary)", fontSize: "0.8125rem", margin: 0 }}>
                 {JSON.stringify(task.params, null, 1)}
               </p>
@@ -388,7 +388,7 @@ export function AgentWorkspacePage({ onNavigate }) {
               >
                 <div>
                   <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
-                    <h4 style={{ color: "#FFFFFF", margin: 0, fontSize: "1.125rem" }}>{rec.title}</h4>
+                    <h4 style={{ color: "var(--knovara-text-primary)", margin: 0, fontSize: "1.125rem" }}>{rec.title}</h4>
                     <Badge variant="success">30-DAY SUBSCRIPTION</Badge>
                   </div>
                   <p style={{ color: "var(--knovara-text-secondary)", fontSize: "0.875rem", margin: "0 0 6px 0" }}>
@@ -420,7 +420,7 @@ export function AgentWorkspacePage({ onNavigate }) {
                 <span style={{ color: "var(--knovara-text-muted)", fontSize: "0.8125rem", display: "block" }}>
                   Credential Identifier
                 </span>
-                <code style={{ color: "#FFFFFF", fontSize: "0.9375rem" }}>{activeCredential.credential_id}</code>
+                <code style={{ color: "var(--knovara-text-primary)", fontSize: "0.9375rem" }}>{activeCredential.credential_id}</code>
               </div>
               <Badge variant="success">ACTIVE ON-CHAIN</Badge>
             </div>
@@ -475,7 +475,7 @@ export function AgentWorkspacePage({ onNavigate }) {
                       }}
                     >
                       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-                        <strong style={{ color: "#FFFFFF" }}>{i + 1}. {mat.name} ({mat.materialId})</strong>
+                        <strong style={{ color: "var(--knovara-text-primary)" }}>{i + 1}. {mat.name} ({mat.materialId})</strong>
                         <span style={{ color: "var(--knovara-lime)", fontFamily: "var(--font-mono)", fontSize: "0.8125rem" }}>
                           Suitability: {(mat.suitabilityScore * 100).toFixed(1)}%
                         </span>
@@ -517,19 +517,19 @@ export function AgentWorkspacePage({ onNavigate }) {
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", fontSize: "0.8125rem" }}>
                 <div>
                   <span style={{ color: "var(--knovara-text-muted)", display: "block" }}>Dedicated Agent Account</span>
-                  <code style={{ color: "#FFFFFF" }}>{activeIntent.agent.agent_account_id}</code>
+                  <code style={{ color: "var(--knovara-text-primary)" }}>{activeIntent.agent.agent_account_id}</code>
                 </div>
                 <div>
                   <span style={{ color: "var(--knovara-text-muted)", display: "block" }}>Monthly Rate</span>
-                  <strong style={{ color: "var(--knovara-lime)", fontSize: "1rem" }}>{activeIntent.asset.price_near} NEAR</strong>
+                  <strong style={{ color: "#18181B", fontSize: "1rem" }}>{activeIntent.asset.price_near} NEAR</strong>
                 </div>
                 <div>
                   <span style={{ color: "var(--knovara-text-muted)", display: "block" }}>Duration</span>
-                  <span style={{ color: "#FFFFFF" }}>Fixed 30 Days</span>
+                  <span style={{ color: "var(--knovara-text-primary)" }}>Fixed 30 Days</span>
                 </div>
                 <div>
                   <span style={{ color: "var(--knovara-text-muted)", display: "block" }}>Contract Method</span>
-                  <code style={{ color: "#FFFFFF" }}>subscribe_to_offer</code>
+                  <code style={{ color: "var(--knovara-text-primary)" }}>subscribe_to_offer</code>
                 </div>
               </div>
             </div>

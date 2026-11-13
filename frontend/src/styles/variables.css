@@ -1,59 +1,60 @@
 :root {
   /* =====================================================================
      KNOVARA DESIGN SYSTEM VARIABLES
-     Theme: Slate Charcoal (#58595B) & Ultra-Luminous Neon Lime Green (#C6F432)
-     Colors matching uploaded palette:
-       - Slate Charcoal: #58595B (body & backdrop layers: #4F5053 / #434447)
-       - Pure White:     #FFFFFF (headings & primary text)
-       - Soft Linen:     #E2E8F0 (supporting text)
-       - Neon Lime:      #C6F432 (ultra-radiant shine brand accent)
+     Theme: Warm Khaki Beige (#D5CEA2) & Ultra-Radiant Neon Lime (#C6F432)
+     Colors:
+       - Background:  #D5CEA2 (Uploaded swatch)
+       - Surface:     #DFD8AE / #E8E2C2
+       - Headings:    #18181B (Deep rich dark charcoal)
+       - Body Text:   #3F3F46 (Clean dark slate)
+       - Neon Lime:   #C6F432 (Ultra-radiant glow brand accent)
      ===================================================================== */
 
-  /* Neutral Backgrounds & Slate Charcoal Surfaces */
-  --knovara-bg: #4F5053;               /* Slate Charcoal Gray from image */
-  --knovara-bg-secondary: #434447;     /* Elevated backdrop layer */
-  --knovara-surface: #3E3F42;          /* Sleek charcoal surface */
-  --knovara-surface-card: #353639;     /* Deep slate card surface */
-  --knovara-surface-highlight: #5A5B5E;/* Hover & active highlight */
-  
-  /* Borders, Dividers & Architectural Lines */
-  --knovara-divider: rgba(255, 255, 255, 0.14);
-  --knovara-border: rgba(255, 255, 255, 0.18);
-  --knovara-border-strong: rgba(255, 255, 255, 0.3);
-  --knovara-border-lime: rgba(198, 244, 50, 0.55);
+  /* Neutral Backgrounds & Surfaces */
+  --knovara-bg: #D5CEA2;               /* Exact uploaded beige/sand swatch */
+  --knovara-bg-secondary: #CBC498;     /* Slightly deeper beige layer */
+  --knovara-surface: #DFD8AE;          /* Elevated warm surface */
+  --knovara-surface-card: #E8E2C2;     /* Warm cream card base */
+  --knovara-surface-highlight: #F2ECDE;/* Hover & active highlight */
 
-  /* Brand Accents - Ultra-Luminous Lime Green (#C6F432) */
+  /* Borders, Dividers & Architectural Lines */
+  --knovara-divider: rgba(24, 24, 27, 0.12);
+  --knovara-border: rgba(24, 24, 27, 0.16);
+  --knovara-border-strong: rgba(24, 24, 27, 0.28);
+  --knovara-border-lime: #98C414;
+
+  /* Brand Accents - Ultra-Radiant Lime Green (#C6F432) */
   --knovara-lime: #C6F432;             /* Vibrant Neon Lime */
   --knovara-lime-hover: #D6F94A;
   --knovara-lime-active: #B0DD24;
-  --knovara-lime-subtle: rgba(198, 244, 50, 0.18);
-  --knovara-lime-glow: rgba(198, 244, 50, 0.45);
-  --knovara-focus-ring: rgba(198, 244, 50, 0.65);
+  --knovara-lime-subtle: rgba(198, 244, 50, 0.25);
+  --knovara-lime-glow: rgba(198, 244, 50, 0.6);
+  --knovara-focus-ring: rgba(198, 244, 50, 0.7);
 
   /* Aliases for Existing Component Selectors */
-  --knovara-blue-primary: #C6F432;     /* Neon Lime */
+  --knovara-blue-primary: #C6F432;
   --knovara-blue-primary-hover: #D6F94A;
   --knovara-blue-primary-active: #B0DD24;
-  --knovara-blue-subtle: rgba(198, 244, 50, 0.18);
-  --knovara-blue-border: rgba(198, 244, 50, 0.55);
+  --knovara-blue-subtle: rgba(198, 244, 50, 0.25);
+  --knovara-blue-border: #98C414;
 
   --knovara-blue-sky: #C6F432;
   --knovara-blue-sky-hover: #D6F94A;
-  --knovara-blue-sky-subtle: rgba(198, 244, 50, 0.2);
+  --knovara-blue-sky-subtle: rgba(198, 244, 50, 0.25);
 
-  /* High-Contrast Typography fitted to Slate Charcoal Background */
-  --knovara-text-primary: #FFFFFF;     /* Pure White */
-  --knovara-text-secondary: #E2E8F0;   /* Bright silver/linen from image accent */
-  --knovara-text-muted: #CBD5E1;       /* Visible slate technical text */
-  --knovara-text-inverse: #18191B;     /* Deep black text on Lime elements */
+  /* High-Contrast Typography fitted to Warm Beige Background */
+  --knovara-text-primary: #18181B;     /* Deep rich dark charcoal */
+  --knovara-text-secondary: #3F3F46;   /* Clean readable dark slate */
+  --knovara-text-muted: #52525B;       /* Muted technical gray */
+  --knovara-text-inverse: #18181B;     /* Dark text on Neon Lime elements */
 
   /* Status Colors */
-  --knovara-status-success: #C6F432;
-  --knovara-status-success-bg: rgba(198, 244, 50, 0.18);
-  --knovara-status-warning: #FBBF24;
-  --knovara-status-warning-bg: rgba(251, 191, 36, 0.18);
-  --knovara-status-danger: #F87171;
-  --knovara-status-danger-bg: rgba(248, 113, 113, 0.18);
+  --knovara-status-success: #16A34A;
+  --knovara-status-success-bg: rgba(22, 163, 74, 0.16);
+  --knovara-status-warning: #D97706;
+  --knovara-status-warning-bg: rgba(217, 119, 6, 0.16);
+  --knovara-status-danger: #DC2626;
+  --knovara-status-danger-bg: rgba(220, 38, 38, 0.16);
 
   /* Typography */
   --font-serif: "Instrument Serif", Georgia, serif;
@@ -70,13 +71,13 @@
   --radius-lg: 16px;
   --radius-pill: 9999px;
 
-  /* Multi-Layered Ultra-Radiant Neon Shine & Shadows */
-  --shadow-subtle: 0 2px 4px rgba(0, 0, 0, 0.35);
-  --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.12);
-  --shadow-elevated: 0 24px 56px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.18);
+  /* Shadows & Luminous Glow */
+  --shadow-subtle: 0 1px 3px rgba(24, 24, 27, 0.08);
+  --shadow-card: 0 4px 20px rgba(24, 24, 27, 0.08), 0 0 0 1px rgba(24, 24, 27, 0.08);
+  --shadow-elevated: 0 20px 40px rgba(24, 24, 27, 0.14), 0 0 0 1px rgba(24, 24, 27, 0.12);
   
-  /* High-Intensity Shine */
-  --glow-lime: 0 0 25px rgba(198, 244, 50, 0.65), 0 0 65px rgba(198, 244, 50, 0.35);
-  --glow-lime-subtle: 0 0 20px rgba(198, 244, 50, 0.4), 0 0 40px rgba(198, 244, 50, 0.2);
-  --glow-lime-intense: 0 0 15px #C6F432, 0 0 35px rgba(198, 244, 50, 0.75), 0 0 75px rgba(198, 244, 50, 0.4);
+  /* Ultra-Radiant Neon Lime Shine */
+  --glow-lime: 0 0 18px rgba(198, 244, 50, 0.85), 0 0 40px rgba(198, 244, 50, 0.55), 0 2px 10px rgba(24, 24, 27, 0.2);
+  --glow-lime-subtle: 0 0 12px rgba(198, 244, 50, 0.6), 0 0 25px rgba(198, 244, 50, 0.35);
+  --glow-lime-intense: 0 0 12px #C6F432, 0 0 28px rgba(198, 244, 50, 0.95), 0 0 60px rgba(198, 244, 50, 0.65), 0 2px 12px rgba(24, 24, 27, 0.3);
 }

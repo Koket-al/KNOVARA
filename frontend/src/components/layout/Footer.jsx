@@ -6,7 +6,7 @@ export function Footer() {
   return (
     <footer
       style={{
-        backgroundColor: "rgba(11, 11, 12, 0.95)",
+        backgroundColor: "rgba(213, 206, 162, 0.96)",
         borderTop: "1px solid var(--knovara-border)",
         marginTop: "80px",
         padding: "48px 0 36px 0",
@@ -26,8 +26,8 @@ export function Footer() {
           }}
         >
           <div>
-            <div style={{ fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: "1.15rem", color: "#FFFFFF" }}>
-              KNOVARA<span style={{ color: "var(--knovara-lime)" }}>.</span>
+            <div style={{ fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: "1.15rem", color: "var(--knovara-text-primary)" }}>
+              KNOVARA<span style={{ color: "var(--knovara-lime)", textShadow: "0 0 10px #C6F432" }}>.</span>
             </div>
             <div style={{ fontSize: "0.8125rem", color: "var(--knovara-text-secondary)", marginTop: "4px" }}>
               Permanent cryptographic priority and decentralized licensing on NEAR.
@@ -36,7 +36,7 @@ export function Footer() {
 
           <div style={{ fontSize: "0.8125rem", color: "var(--knovara-text-muted)" }}>
             <div>
-              Network: <strong style={{ color: "var(--knovara-lime)" }}>NEAR {config.NEAR_NETWORK}</strong>
+              Network: <strong style={{ color: "var(--knovara-text-primary)" }}>NEAR {config.NEAR_NETWORK}</strong>
             </div>
             <div style={{ marginTop: "4px" }}>
               Contract: <code>{config.NEAR_CONTRACT_ID}</code>
