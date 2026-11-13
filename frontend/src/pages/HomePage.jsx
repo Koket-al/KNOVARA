@@ -1,83 +1,79 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "../components/common/Button.jsx";
 import { Card } from "../components/common/Card.jsx";
 import { Badge } from "../components/common/Badge.jsx";
 import { LegalDisclaimer } from "../components/common/LegalDisclaimer.jsx";
 import { config } from "../config/env.js";
+import { api } from "../services/api.js";
 
 export function HomePage({ onNavigate }) {
-  const [activeStep, setActiveStep] = React.useState(0);
+  const [activeStep, setActiveStep] = useState(0);
+  const [liveDiscoveries, setLiveDiscoveries] = useState([]);
+  const [liveProducts, setLiveProducts] = useState([]);
+  const [isLoadingFeed, setIsLoadingFeed] = useState(true);
 
-  // Interactive mini-demo states:
-  const [selectedTopic, setSelectedTopic] = React.useState("aerospace");
-  const [isApproved, setIsApproved] = React.useState(false);
-  const [isGatewayTesting, setIsGatewayTesting] = React.useState(false);
-  const [gatewayResult, setGatewayResult] = React.useState(null);
-  const [isClaimed, setIsClaimed] = React.useState(false);
+  // Fetch genuine real-time ecosystem records from the backend API
+  useEffect(() => {
+    let isMounted = true;
+    async function fetchLiveFeed() {
+      try {
+        const [discRes, prodRes] = await Promise.allSettled([
+          api.getDiscoveries({ limit: 3, sort: "newest" }),
+          api.getApiProducts(),
+        ]);
+        if (!isMounted) return;
+        if (discRes.status === "fulfilled" && discRes.value?.discoveries) {
+          setLiveDiscoveries(discRes.value.discoveries);
+        }
+        if (prodRes.status === "fulfilled" && prodRes.value?.api_products) {
+          setLiveProducts(prodRes.value.api_products.slice(0, 3));
+        }
+      } catch (err) {
+        console.warn("[HOMEPAGE] Live feed fetch failed:", err);
+      } finally {
+        if (isMounted) setIsLoadingFeed(false);
+      }
+    }
+    fetchLiveFeed();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const steps = [
     {
       num: "01",
       tag: "DISCOVER",
       sentence: "1. AI agents discover verified algorithms and APIs.",
-      shortNote: "Agents search the catalog autonomously and select verified research tools.",
+      explanation: "Agents search the open catalog autonomously and select verified research tools.",
+      actionLabel: "Explore Marketplace",
+      path: "/marketplace",
     },
     {
       num: "02",
       tag: "APPROVE",
       sentence: "2. Human owners approve simple 30-day subscriptions.",
-      shortNote: "Owners stay in complete control and authorize fixed-term access with one click.",
+      explanation: "Owners maintain full signing authority and authorize fixed-term access with one click.",
+      actionLabel: "Open Agent Workspace",
+      path: "/agent-workspace",
     },
     {
       num: "03",
       tag: "RUN SAFELY",
       sentence: "3. Secure gateway runs live requests with zero key leaks.",
-      shortNote: "Requests route through an encrypted firewall so private keys never leak.",
+      explanation: "Requests route through an encrypted firewall so private credentials stay secret.",
+      actionLabel: "Publisher Portal",
+      path: "/publisher",
     },
     {
       num: "04",
       tag: "GET PAID",
       sentence: "4. Creators get paid instantly and directly on the blockchain.",
-      shortNote: "100% of licensing fees flow directly to creator royalty balances on NEAR.",
+      explanation: "100% of licensing fees flow directly to creator royalty balances on NEAR.",
+      actionLabel: "View Royalties",
+      path: "/account",
     },
   ];
-
-  const topicDemos = {
-    aerospace: {
-      id: "disc-mat-001",
-      title: "MMPDS-01 Aerospace Alloys",
-      op: "GET /v1/materials/query",
-      price: "1.0 NEAR / 30 Days",
-      speed: "12ms",
-    },
-    genomics: {
-      id: "disc-bio-002",
-      title: "Vaccine Candidate Predictor",
-      op: "POST /v1/models/predict",
-      price: "2.5 NEAR / 30 Days",
-      speed: "18ms",
-    },
-    fem: {
-      id: "disc-cad-003",
-      title: "Structural FEM Solver",
-      op: "POST /v1/simulation/fem",
-      price: "1.5 NEAR / 30 Days",
-      speed: "24ms",
-    },
-  };
-
-  const handleRunGatewayTest = () => {
-    setIsGatewayTesting(true);
-    setGatewayResult(null);
-    setTimeout(() => {
-      setIsGatewayTesting(false);
-      setGatewayResult({
-        status: 200,
-        message: "200 OK • Upstream Key Decrypted • Zero Token Leakage",
-        latency: "14ms",
-      });
-    }, 450);
-  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "56px", position: "relative" }}>
@@ -88,20 +84,21 @@ export function HomePage({ onNavigate }) {
       <section style={{ textAlign: "center", position: "relative", padding: "32px 0 16px 0" }}>
         <div style={{ maxWidth: "900px", margin: "0 auto", display: "flex", flexDirection: "column", alignItems: "center" }}>
           
-          {/* Pill Badge matching reference */}
+          {/* Pill Badge */}
           <div className="hero-pill-badge" style={{ marginBottom: "24px" }}>
             <span className="dot" />
             <span>Agent-Native Protocol &bull; Cryptographic Priority &amp; Discovery Rights Registry</span>
           </div>
 
-          {/* Editorial Serif Display Headline matching image style */}
+          {/* Editorial Headline */}
           <h1 className="hero-serif-title" style={{ marginBottom: "28px" }}>
             Ship <em>knowledge</em> to AI agents faster than ever.
           </h1>
 
           {/* =============================================================
               INTERACTIVE 4-STEP WORKFLOW COMPONENT
-              Simple, understandable English + Interactive Live Demos
+              Simple, understandable English + Clean Interactive Navigation
+              No hardcoded fake IDs, fake accounts, or fake timeouts!
              ============================================================= */}
           <div
             style={{
@@ -151,7 +148,7 @@ export function HomePage({ onNavigate }) {
                     }}
                   >
                     <span>{st.num}.</span>
-                    <span>{st.title || st.tag}</span>
+                    <span>{st.tag}</span>
                   </button>
                 );
               })}
@@ -167,11 +164,8 @@ export function HomePage({ onNavigate }) {
                 boxShadow: "0 6px 24px rgba(14, 71, 161, 0.08)",
                 textAlign: "left",
                 transition: "all 0.25s ease",
-                position: "relative",
-                overflow: "hidden",
               }}
             >
-              {/* Highlighted Simple Sentence */}
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "10px", marginBottom: "8px" }}>
                 <div style={{ fontSize: "1.25rem", fontWeight: 800, color: "var(--knovara-text-primary)", letterSpacing: "-0.01em" }}>
                   {steps[activeStep].sentence}
@@ -180,190 +174,21 @@ export function HomePage({ onNavigate }) {
               </div>
 
               <p style={{ fontSize: "0.9375rem", color: "var(--knovara-text-secondary)", margin: "0 0 20px 0" }}>
-                {steps[activeStep].shortNote}
+                {steps[activeStep].explanation}
               </p>
 
-              {/* Interactive Mini-Demo Stage 01: Discover */}
-              {activeStep === 0 && (
-                <div style={{ padding: "16px", background: "var(--knovara-bg)", borderRadius: "var(--radius-sm)", border: "1px solid var(--knovara-border)" }}>
-                  <div style={{ fontSize: "0.8125rem", fontWeight: 700, color: "var(--knovara-text-secondary)", marginBottom: "10px", textTransform: "uppercase" }}>
-                    Select Research Domain to Test Agent Discovery:
-                  </div>
-                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "14px" }}>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedTopic("aerospace")}
-                      style={{
-                        padding: "6px 14px",
-                        borderRadius: "var(--radius-pill)",
-                        fontSize: "0.8125rem",
-                        fontWeight: 600,
-                        cursor: "pointer",
-                        border: selectedTopic === "aerospace" ? "1px solid #1E88E5" : "1px solid var(--knovara-border)",
-                        background: selectedTopic === "aerospace" ? "var(--knovara-blue-primary)" : "#FFFFFF",
-                        color: selectedTopic === "aerospace" ? "#FFFFFF" : "var(--knovara-text-primary)",
-                      }}
-                    >
-                      ⚡ Aerospace Metallurgy
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedTopic("genomics")}
-                      style={{
-                        padding: "6px 14px",
-                        borderRadius: "var(--radius-pill)",
-                        fontSize: "0.8125rem",
-                        fontWeight: 600,
-                        cursor: "pointer",
-                        border: selectedTopic === "genomics" ? "1px solid #1E88E5" : "1px solid var(--knovara-border)",
-                        background: selectedTopic === "genomics" ? "var(--knovara-blue-primary)" : "#FFFFFF",
-                        color: selectedTopic === "genomics" ? "#FFFFFF" : "var(--knovara-text-primary)",
-                      }}
-                    >
-                      🧬 Vaccine Predictor
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedTopic("fem")}
-                      style={{
-                        padding: "6px 14px",
-                        borderRadius: "var(--radius-pill)",
-                        fontSize: "0.8125rem",
-                        fontWeight: 600,
-                        cursor: "pointer",
-                        border: selectedTopic === "fem" ? "1px solid #1E88E5" : "1px solid var(--knovara-border)",
-                        background: selectedTopic === "fem" ? "var(--knovara-blue-primary)" : "#FFFFFF",
-                        color: selectedTopic === "fem" ? "#FFFFFF" : "var(--knovara-text-primary)",
-                      }}
-                    >
-                      ⚙️ Structural FEM Solver
-                    </button>
-                  </div>
-
-                  {/* Live Matched Result Card */}
-                  <div className="flex-between" style={{ padding: "12px 16px", background: "#FFFFFF", borderRadius: "var(--radius-sm)", border: "1px solid var(--knovara-border)" }}>
-                    <div>
-                      <div style={{ fontWeight: 800, fontSize: "0.9375rem", color: "var(--knovara-text-primary)" }}>
-                        {topicDemos[selectedTopic].title}
-                      </div>
-                      <div style={{ fontSize: "0.75rem", color: "var(--knovara-text-muted)", marginTop: "2px", fontFamily: "var(--font-mono)" }}>
-                        ID: {topicDemos[selectedTopic].id} &bull; {topicDemos[selectedTopic].op} &bull; Response: {topicDemos[selectedTopic].speed}
-                      </div>
-                    </div>
-                    <div style={{ textAlign: "right" }}>
-                      <Badge variant="success">VERIFIED ON NEAR</Badge>
-                      <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--knovara-blue-primary)", marginTop: "4px" }}>
-                        {topicDemos[selectedTopic].price}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Interactive Mini-Demo Stage 02: Approve */}
-              {activeStep === 1 && (
-                <div style={{ padding: "16px", background: "var(--knovara-bg)", borderRadius: "var(--radius-sm)", border: "1px solid var(--knovara-border)" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
-                    <div>
-                      <div style={{ fontSize: "0.8125rem", color: "var(--knovara-text-muted)" }}>Agent Requesting Access:</div>
-                      <code style={{ fontSize: "0.875rem", color: "var(--knovara-text-primary)" }}>agent-491f1ffe.testnet</code>
-                      <div style={{ fontSize: "0.8125rem", color: "var(--knovara-text-secondary)", marginTop: "4px" }}>
-                        Rate: <strong>1.0 NEAR / 30 Days</strong> (Fixed on-chain term)
-                      </div>
-                    </div>
-
-                    <div>
-                      {!isApproved ? (
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          onClick={() => setIsApproved(true)}
-                        >
-                          Approve Subscription (1.0 NEAR) &rarr;
-                        </Button>
-                      ) : (
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                          <Badge variant="success">✓ APPROVED ON NEAR</Badge>
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => setIsApproved(false)}
-                          >
-                            Reset
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  {isApproved && (
-                    <div style={{ marginTop: "10px", fontSize: "0.75rem", color: "#16A34A", fontFamily: "var(--font-mono)", fontWeight: 600 }}>
-                      ✓ Contract executed `subscribe_to_offer` atomically. 30-day token issued to dedicated agent.
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Interactive Mini-Demo Stage 03: Run Safely */}
-              {activeStep === 2 && (
-                <div style={{ padding: "16px", background: "var(--knovara-bg)", borderRadius: "var(--radius-sm)", border: "1px solid var(--knovara-border)" }}>
-                  <div className="flex-between" style={{ flexWrap: "wrap", gap: "12px", marginBottom: "12px" }}>
-                    <div style={{ fontSize: "0.8125rem", color: "var(--knovara-text-secondary)" }}>
-                      Architecture: <code>Agent MCP Tool</code> &rarr; <code>SSRF Gateway</code> &rarr; <code>Encrypted Upstream API</code>
-                    </div>
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={handleRunGatewayTest}
-                      isLoading={isGatewayTesting}
-                    >
-                      {isGatewayTesting ? "Routing..." : "Send Test Gateway Request"}
-                    </Button>
-                  </div>
-
-                  <div style={{ padding: "10px 14px", background: "#FFFFFF", borderRadius: "var(--radius-sm)", border: "1px solid var(--knovara-border)", fontFamily: "var(--font-mono)", fontSize: "0.8125rem" }}>
-                    {gatewayResult ? (
-                      <span style={{ color: "#16A34A", fontWeight: 700 }}>
-                        ✓ {gatewayResult.message} &bull; Latency: {gatewayResult.latency}
-                      </span>
-                    ) : (
-                      <span style={{ color: "var(--knovara-text-muted)" }}>
-                        Click "Send Test Gateway Request" to simulate real-time authenticated proxy execution.
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Interactive Mini-Demo Stage 04: Get Paid */}
-              {activeStep === 3 && (
-                <div style={{ padding: "16px", background: "var(--knovara-bg)", borderRadius: "var(--radius-sm)", border: "1px solid var(--knovara-border)" }}>
-                  <div className="flex-between" style={{ flexWrap: "wrap", gap: "12px" }}>
-                    <div>
-                      <div style={{ fontSize: "0.8125rem", color: "var(--knovara-text-muted)" }}>Creator Royalty Balance:</div>
-                      <div style={{ fontSize: "1.35rem", fontWeight: 800, color: "var(--knovara-text-primary)", fontFamily: "var(--font-mono)" }}>
-                        {isClaimed ? "1.00 NEAR" : "0.00 NEAR"}
-                      </div>
-                    </div>
-
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={() => setIsClaimed(!isClaimed)}
-                    >
-                      {isClaimed ? "Reset Payout Demo" : "Simulate Payout (+1.0 NEAR)"}
-                    </Button>
-                  </div>
-
-                  <div style={{ marginTop: "10px", fontSize: "0.75rem", color: isClaimed ? "#16A34A" : "var(--knovara-text-muted)", fontFamily: "var(--font-mono)" }}>
-                    {isClaimed
-                      ? "✓ Instant yoctoNEAR pull-payment deposited directly into claimable royalty balance!"
-                      : "Royalties are credited atomically upon license activation with zero platform delays."}
-                  </div>
-                </div>
-              )}
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => onNavigate(steps[activeStep].path)}
+                >
+                  {steps[activeStep].actionLabel} &rarr;
+                </Button>
+              </div>
             </div>
 
-            {/* 4 Simple Sentences At-A-Glance Cards Grid */}
+            {/* 4 Simple Sentences Interactive Grid */}
             <div
               style={{
                 display: "grid",
@@ -437,7 +262,7 @@ export function HomePage({ onNavigate }) {
             </Button>
           </div>
 
-          {/* Hero Metrics Row (matching the 4 stats in the reference image) */}
+          {/* Hero Metrics Row */}
           <div
             style={{
               display: "grid",
@@ -493,7 +318,7 @@ export function HomePage({ onNavigate }) {
       {/* Mandatory Legal Notice */}
       <LegalDisclaimer />
 
-      {/* 4 Architectural Pillars: Simple, direct sentences with glowing icons */}
+      {/* 4 Architectural Pillars */}
       <section>
         <div style={{ marginBottom: "24px", display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: "12px" }}>
           <div>
@@ -502,7 +327,7 @@ export function HomePage({ onNavigate }) {
               Four simple steps from research API publishing to autonomous agent execution.
             </p>
           </div>
-          <span style={{ fontSize: "0.75rem", color: "var(--knovara-lime)", fontFamily: "var(--font-mono)" }}>
+          <span style={{ fontSize: "0.75rem", color: "var(--knovara-text-muted)", fontFamily: "var(--font-mono)" }}>
             NEAR TESTNET &bull; MODEL CONTEXT PROTOCOL &bull; AES-256-GCM
           </span>
         </div>
@@ -554,130 +379,148 @@ export function HomePage({ onNavigate }) {
       <div className="knovara-glow-line" />
 
       {/* =====================================================================
-          BOTTOM SHOWCASE SECTION WITH RADIANT UPWARD NEON LIGHT AURA
-          Directly mirroring the 3 cards and lighting in the user's reference image!
+          BOTTOM SHOWCASE SECTION WITH LIVE REAL-TIME DATA
+          Zero hardcoded mock entries — directly connected to API endpoints!
           ===================================================================== */}
       <section className="knovara-bottom-aura">
         <div style={{ textAlign: "center", marginBottom: "32px", position: "relative", zIndex: 1 }}>
           <Badge variant="blue" style={{ marginBottom: "8px" }}>Live Ecosystem</Badge>
           <h2 style={{ fontSize: "1.75rem" }}>Live Network Activity</h2>
           <p style={{ color: "var(--knovara-text-secondary)", fontSize: "0.875rem", marginTop: "4px" }}>
-            Real-time verification, cryptographic health, and active agent subscriptions.
+            Real-time verification, cryptographic health, and active agent subscriptions on NEAR Protocol.
           </p>
         </div>
 
-        {/* 3 Showcase Cards with Glowing Light Beam Backdrop */}
+        {/* 3 Showcase Cards with Genuine Real-Time Backend Data */}
         <div className="knovara-grid-3" style={{ position: "relative", zIndex: 1 }}>
-          {/* Card 1: Recent Agent Activity */}
+          {/* Card 1: Genuine Registered Discoveries */}
           <Card
-            title="• Autonomous Agent Activity"
-            subtitle="Latest on-chain API calls"
-            interactive
-            style={{ backgroundColor: "var(--knovara-surface-card)", borderColor: "rgba(255, 255, 255, 0.18)" }}
-          >
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "8px" }}>
-              <div className="flex-between" style={{ padding: "8px 10px", background: "rgba(255, 255, 255, 0.03)", borderRadius: "var(--radius-xs)", border: "1px solid rgba(255, 255, 255, 0.05)" }}>
-                <div>
-                  <div style={{ fontSize: "0.8125rem", fontWeight: 600, color: "var(--knovara-text-primary)" }}>agent-explorer.testnet</div>
-                  <div style={{ fontSize: "0.75rem", color: "var(--knovara-text-muted)" }}>Aerospace Alloys API</div>
-                </div>
-                <Badge variant="success">ACTIVE SUB</Badge>
-              </div>
-
-              <div className="flex-between" style={{ padding: "8px 10px", background: "rgba(24, 24, 27, 0.05)", borderRadius: "var(--radius-xs)", border: "1px solid var(--knovara-border)" }}>
-                <div>
-                  <div style={{ fontSize: "0.8125rem", fontWeight: 600, color: "var(--knovara-text-primary)" }}>disc-mat-001</div>
-                  <div style={{ fontSize: "0.75rem", color: "var(--knovara-text-muted)" }}>MMPDS-01 Metallurgy</div>
-                </div>
-                <Badge variant="blue">VERIFIED</Badge>
-              </div>
-
-              <div className="flex-between" style={{ padding: "8px 10px", background: "rgba(24, 24, 27, 0.05)", borderRadius: "var(--radius-xs)", border: "1px solid var(--knovara-border)" }}>
-                <div>
-                  <div style={{ fontSize: "0.8125rem", fontWeight: 600, color: "var(--knovara-text-primary)" }}>knov_live_72cb0eb2</div>
-                  <div style={{ fontSize: "0.75rem", color: "var(--knovara-text-muted)" }}>1.0 NEAR / 30 Days</div>
-                </div>
-                <Badge variant="success">STREAMING</Badge>
-              </div>
-            </div>
-          </Card>
-
-          {/* Card 2: Registry Health & Curve (like Review score 94 in screenshot) */}
-          <Card
-            title="• Gateway & Protocol Health"
-            subtitle="Auto-audit & SSRF firewall enabled"
-            interactive
-            style={{ backgroundColor: "var(--knovara-surface-card)", borderColor: "var(--knovara-border)", boxShadow: "var(--shadow-card)" }}
-          >
-            <div style={{ display: "flex", alignItems: "baseline", gap: "8px", margin: "10px 0" }}>
-              <span style={{ fontSize: "3rem", fontWeight: 800, color: "var(--knovara-text-primary)", textShadow: "0 0 16px rgba(33, 150, 243, 0.45)", fontFamily: "var(--font-heading)", lineHeight: 1 }}>
-                99.9
-              </span>
-              <span style={{ fontSize: "0.8125rem", color: "var(--knovara-text-muted)" }}>
-                / 100 security health
-              </span>
-            </div>
-
-            {/* Glowing SVG Area Chart */}
-            <div style={{ width: "100%", height: "70px", position: "relative", marginTop: "12px" }}>
-              <svg viewBox="0 0 200 60" style={{ width: "100%", height: "100%", overflow: "visible" }}>
-                <defs>
-                  <linearGradient id="blueGlowGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stopColor="#2196F3" stopOpacity="0.4" />
-                    <stop offset="100%" stopColor="#2196F3" stopOpacity="0.0" />
-                  </linearGradient>
-                </defs>
-                <path
-                  d="M0,50 Q40,42 70,35 T130,22 T170,14 T200,8 L200,60 L0,60 Z"
-                  fill="url(#blueGlowGrad)"
-                />
-                <path
-                  d="M0,50 Q40,42 70,35 T130,22 T170,14 T200,8"
-                  fill="none"
-                  stroke="#2196F3"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                />
-                <circle cx="200" cy="8" r="4" fill="#2196F3" filter="drop-shadow(0 0 8px #2196F3)" />
-              </svg>
-            </div>
-            <div style={{ fontSize: "0.75rem", color: "var(--knovara-text-muted)", marginTop: "6px", textAlign: "right" }}>
-              461 / 461 protocol checks passed
-            </div>
-          </Card>
-
-          {/* Card 3: Licensing State Timeline */}
-          <Card
-            title="• Agent Subscription Lifecycle"
-            subtitle="Cryptographic authorization"
+            title="• Registered Discoveries"
+            subtitle="Latest verified passports on-chain"
             interactive
             style={{ backgroundColor: "var(--knovara-surface-card)", borderColor: "var(--knovara-border)" }}
           >
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "14px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <span style={{ width: "80px", fontSize: "0.75rem", color: "var(--knovara-text-muted)" }}>01. Discovery</span>
-                <div style={{ flex: 1, height: "10px", background: "rgba(144, 202, 248, 0.25)", borderRadius: "var(--radius-pill)", overflow: "hidden" }}>
-                  <div style={{ width: "100%", height: "100%", background: "var(--knovara-text-primary)", borderRadius: "var(--radius-pill)" }} />
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "8px" }}>
+              {isLoadingFeed ? (
+                <div style={{ fontSize: "0.8125rem", color: "var(--knovara-text-muted)", padding: "12px 0" }}>
+                  Querying NEAR registry projections...
                 </div>
-              </div>
+              ) : liveDiscoveries.length > 0 ? (
+                liveDiscoveries.map((d) => (
+                  <div
+                    key={d.discovery_id}
+                    onClick={() => onNavigate(`/discoveries/${encodeURIComponent(d.discovery_id)}`)}
+                    className="flex-between"
+                    style={{
+                      padding: "8px 10px",
+                      background: "rgba(33, 150, 243, 0.05)",
+                      borderRadius: "var(--radius-xs)",
+                      border: "1px solid var(--knovara-border)",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontSize: "0.8125rem", fontWeight: 600, color: "var(--knovara-text-primary)" }}>
+                        {d.title || d.discovery_id}
+                      </div>
+                      <div style={{ fontSize: "0.75rem", color: "var(--knovara-text-muted)" }}>
+                        ID: {d.discovery_id}
+                      </div>
+                    </div>
+                    <Badge variant="blue">VERIFIED</Badge>
+                  </div>
+                ))
+              ) : (
+                <div style={{ padding: "16px 0", textAlign: "center" }}>
+                  <p style={{ fontSize: "0.8125rem", color: "var(--knovara-text-muted)", margin: "0 0 10px 0" }}>
+                    No discoveries registered on this network yet.
+                  </p>
+                  <Button variant="outline" size="sm" onClick={() => onNavigate("/register")}>
+                    Register First Discovery
+                  </Button>
+                </div>
+              )}
+            </div>
+          </Card>
 
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <span style={{ width: "80px", fontSize: "0.75rem", color: "var(--knovara-text-muted)" }}>02. Approval</span>
-                <div style={{ flex: 1, height: "10px", background: "rgba(144, 202, 248, 0.25)", borderRadius: "var(--radius-pill)", overflow: "hidden" }}>
-                  <div style={{ width: "100%", height: "100%", background: "var(--knovara-blue-primary)", borderRadius: "var(--radius-pill)", boxShadow: "0 0 10px #2196F3" }} />
+          {/* Card 2: Genuine API Products */}
+          <Card
+            title="• Verified API Products"
+            subtitle="Live agent computational capabilities"
+            interactive
+            style={{ backgroundColor: "var(--knovara-surface-card)", borderColor: "var(--knovara-border)", boxShadow: "var(--shadow-card)" }}
+          >
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "8px" }}>
+              {isLoadingFeed ? (
+                <div style={{ fontSize: "0.8125rem", color: "var(--knovara-text-muted)", padding: "12px 0" }}>
+                  Querying API product catalog...
                 </div>
-              </div>
+              ) : liveProducts.length > 0 ? (
+                liveProducts.map((p) => (
+                  <div
+                    key={p.api_product_id}
+                    onClick={() => onNavigate("/marketplace")}
+                    className="flex-between"
+                    style={{
+                      padding: "8px 10px",
+                      background: "rgba(33, 150, 243, 0.05)",
+                      borderRadius: "var(--radius-xs)",
+                      border: "1px solid var(--knovara-border)",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontSize: "0.8125rem", fontWeight: 600, color: "var(--knovara-text-primary)" }}>
+                        {p.title}
+                      </div>
+                      <div style={{ fontSize: "0.75rem", color: "var(--knovara-text-muted)" }}>
+                        {p.monthly_price_near} NEAR / 30 Days
+                      </div>
+                    </div>
+                    <Badge variant="success">ACTIVE API</Badge>
+                  </div>
+                ))
+              ) : (
+                <div style={{ padding: "16px 0", textAlign: "center" }}>
+                  <p style={{ fontSize: "0.8125rem", color: "var(--knovara-text-muted)", margin: "0 0 10px 0" }}>
+                    No API products published yet.
+                  </p>
+                  <Button variant="outline" size="sm" onClick={() => onNavigate("/publisher")}>
+                    Publish an API Product
+                  </Button>
+                </div>
+              )}
+            </div>
+          </Card>
 
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <span style={{ width: "80px", fontSize: "0.75rem", color: "var(--knovara-text-muted)" }}>03. Gateway</span>
-                <div style={{ flex: 1, height: "10px", background: "rgba(144, 202, 248, 0.25)", borderRadius: "var(--radius-pill)", overflow: "hidden" }}>
-                  <div style={{ width: "95%", height: "100%", background: "var(--knovara-blue-primary)", borderRadius: "var(--radius-pill)", boxShadow: "0 0 14px #2196F3" }} />
-                </div>
+          {/* Card 3: Cryptographic Protocol Architecture */}
+          <Card
+            title="• Cryptographic Architecture"
+            subtitle="Sovereignty & smart contract standards"
+            interactive
+            style={{ backgroundColor: "var(--knovara-surface-card)", borderColor: "var(--knovara-border)" }}
+          >
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "8px", fontSize: "0.8125rem" }}>
+              <div className="flex-between" style={{ padding: "6px 8px", background: "rgba(144, 202, 248, 0.15)", borderRadius: "var(--radius-xs)" }}>
+                <span style={{ color: "var(--knovara-text-secondary)" }}>NFT Standards:</span>
+                <strong style={{ color: "var(--knovara-text-primary)", fontFamily: "var(--font-mono)" }}>NEP-171 / NEP-177</strong>
+              </div>
+              <div className="flex-between" style={{ padding: "6px 8px", background: "rgba(144, 202, 248, 0.15)", borderRadius: "var(--radius-xs)" }}>
+                <span style={{ color: "var(--knovara-text-secondary)" }}>Canonical Hashing:</span>
+                <strong style={{ color: "var(--knovara-text-primary)", fontFamily: "var(--font-mono)" }}>RFC 8785 (JCS)</strong>
+              </div>
+              <div className="flex-between" style={{ padding: "6px 8px", background: "rgba(144, 202, 248, 0.15)", borderRadius: "var(--radius-xs)" }}>
+                <span style={{ color: "var(--knovara-text-secondary)" }}>Wallet Auth:</span>
+                <strong style={{ color: "var(--knovara-text-primary)", fontFamily: "var(--font-mono)" }}>NEP-413 Ed25519</strong>
+              </div>
+              <div className="flex-between" style={{ padding: "6px 8px", background: "rgba(144, 202, 248, 0.15)", borderRadius: "var(--radius-xs)" }}>
+                <span style={{ color: "var(--knovara-text-secondary)" }}>Storage Accounting:</span>
+                <strong style={{ color: "var(--knovara-text-primary)", fontFamily: "var(--font-mono)" }}>NEP-145 Solvency</strong>
               </div>
             </div>
 
-            <div style={{ fontSize: "0.75rem", color: "var(--knovara-text-secondary)", marginTop: "18px", borderTop: "1px solid var(--knovara-border)", paddingTop: "10px" }}>
-              Instant SHA-256 token issuance with zero prompt credential leakage.
+            <div style={{ fontSize: "0.75rem", color: "var(--knovara-text-secondary)", marginTop: "14px", borderTop: "1px solid var(--knovara-border)", paddingTop: "10px" }}>
+              Contract: <code>{config.NEAR_CONTRACT_ID}</code>
             </div>
           </Card>
         </div>
