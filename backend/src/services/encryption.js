@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { config } from "../config/env.js";
 
 const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 12; // 96 bits for GCM
@@ -7,7 +8,7 @@ const IV_LENGTH = 12; // 96 bits for GCM
  * Derives a consistent 32-byte key from GATEWAY_SECRET_KEY or fallback.
  */
 function getMasterKey() {
-  const secret = process.env.GATEWAY_SECRET_KEY || "knovara-default-gateway-secret-key-32b!";
+  const secret = config.GATEWAY_SECRET_KEY || "knovara-default-gateway-secret-key-32b!";
   return crypto.createHash("sha256").update(secret).digest();
 }
 

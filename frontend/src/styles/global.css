@@ -535,3 +535,79 @@ code, .knovara-mono-tag {
   background-color: var(--knovara-blue-primary);
   box-shadow: 0 0 10px #2196F3, 0 0 20px #2196F3;
 }
+
+/* =====================================================================
+   ORGANIC HAND-DRAWN PROCESS STEPPER PIPELINE
+   Directly inspired by user reference design (media_1794599254720_6fd926c7.jpg)
+   ===================================================================== */
+.process-step-container {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  position: relative;
+  width: 100%;
+}
+
+.process-step-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  padding: 24px 16px;
+  border-radius: var(--radius-md);
+  background: var(--knovara-surface-card);
+  border: 1px solid var(--knovara-border);
+  box-shadow: var(--shadow-card);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+}
+
+.process-step-item:hover {
+  transform: translateY(-6px);
+  border-color: var(--knovara-blue-primary);
+  box-shadow: 0 12px 32px rgba(14, 71, 161, 0.12), var(--glow-blue-subtle);
+}
+
+.process-step-item:hover .process-badge-circle {
+  background-color: var(--knovara-blue-primary) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 0 20px rgba(33, 150, 243, 0.6) !important;
+  transform: translate(-50%, -50%) scale(1.06);
+}
+
+.process-step-item:hover .process-sketch-ring {
+  transform: scale(1.08) rotate(12deg);
+}
+
+.process-sketch-ring {
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.process-arrow-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 52px;
+  flex-shrink: 0;
+  width: 44px;
+}
+
+@media (max-width: 960px) {
+  .process-step-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+  .process-arrow-container {
+    display: none;
+  }
+}
+
+@media (max-width: 580px) {
+  .process-step-container {
+    grid-template-columns: 1fr;
+  }
+}

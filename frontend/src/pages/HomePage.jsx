@@ -318,60 +318,263 @@ export function HomePage({ onNavigate }) {
       {/* Mandatory Legal Notice */}
       <LegalDisclaimer />
 
-      {/* 4 Architectural Pillars */}
+      {/* =====================================================================
+          ORGANIC STEPPER PIPELINE: HOW KNOVARA WORKS FOR AI AGENTS
+          Directly matching user reference design (media_1794599254720_6fd926c7.jpg)
+          ===================================================================== */}
       <section>
-        <div style={{ marginBottom: "24px", display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: "12px" }}>
-          <div>
-            <h2 style={{ fontSize: "1.75rem" }}>How KNOVARA Works for AI Agents</h2>
-            <p style={{ color: "var(--knovara-text-secondary)", fontSize: "0.9375rem", marginTop: "4px" }}>
-              Four simple steps from research API publishing to autonomous agent execution.
-            </p>
-          </div>
-          <span style={{ fontSize: "0.75rem", color: "var(--knovara-text-muted)", fontFamily: "var(--font-mono)" }}>
-            NEAR TESTNET &bull; MODEL CONTEXT PROTOCOL &bull; AES-256-GCM
-          </span>
+        <div style={{ marginBottom: "36px", textAlign: "center" }}>
+          <Badge variant="blue" style={{ marginBottom: "10px" }}>Protocol Architecture</Badge>
+          <h2 style={{ fontSize: "2rem", marginBottom: "8px" }}>How KNOVARA Works for AI Agents</h2>
+          <p style={{ color: "var(--knovara-text-secondary)", fontSize: "0.9375rem", maxWidth: "640px", margin: "0 auto" }}>
+            Four simple steps from research API publishing to autonomous agent execution.
+          </p>
         </div>
 
-        <div className="knovara-grid-2">
-          <Card
-            title="1. Autonomous Agent Discovery"
-            subtitle="Model Context Protocol (MCP) tooling"
-            interactive
+        <div className="process-step-container">
+          {/* Step 1 */}
+          <div
+            className="process-step-item"
+            onClick={() => onNavigate("/marketplace")}
           >
-            <p style={{ fontSize: "0.9375rem", color: "var(--knovara-text-secondary)", lineHeight: 1.6 }}>
+            <div style={{ position: "relative", width: "90px", height: "90px", marginBottom: "18px" }}>
+              <svg
+                viewBox="0 0 100 100"
+                style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible" }}
+                className="process-sketch-ring"
+              >
+                <ellipse cx="50" cy="50" rx="44" ry="40" transform="rotate(-9 50 50)" fill="none" stroke="var(--knovara-border-strong)" strokeWidth="1.6" strokeDasharray="160 4" opacity="0.85" />
+                <ellipse cx="49" cy="51" rx="41" ry="44" transform="rotate(24 50 50)" fill="none" stroke="var(--knovara-blue-primary)" strokeWidth="1.4" strokeDasharray="140 3" opacity="0.75" />
+                <ellipse cx="51" cy="49" rx="45" ry="41" transform="rotate(-30 50 50)" fill="none" stroke="var(--knovara-border)" strokeWidth="1.5" opacity="0.65" />
+              </svg>
+              <div
+                className="process-badge-circle"
+                style={{
+                  position: "absolute",
+                  top: "50%",
+                  left: "50%",
+                  transform: "translate(-50%, -50%)",
+                  width: "56px",
+                  height: "56px",
+                  borderRadius: "50%",
+                  backgroundColor: "#FFFFFF",
+                  border: "2.5px solid var(--knovara-blue-primary)",
+                  boxShadow: "0 4px 16px rgba(33, 150, 243, 0.22)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontFamily: "var(--font-heading)",
+                  fontWeight: 900,
+                  fontSize: "1.45rem",
+                  color: "var(--knovara-text-primary)",
+                  transition: "all 0.2s ease",
+                }}
+              >
+                1
+              </div>
+            </div>
+            <h3 style={{ fontSize: "1.125rem", fontWeight: 800, color: "var(--knovara-text-primary)", marginBottom: "4px" }}>
+              Autonomous Discovery
+            </h3>
+            <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--knovara-blue-primary)", fontFamily: "var(--font-mono)", marginBottom: "10px", textTransform: "uppercase" }}>
+              Model Context Protocol
+            </div>
+            <p style={{ fontSize: "0.8125rem", color: "var(--knovara-text-secondary)", lineHeight: 1.55, margin: "0 0 14px 0" }}>
               AI agents autonomously discover verified algorithms and computational APIs using native MCP tools without exposing credentials.
             </p>
-          </Card>
+            <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--knovara-blue-primary)" }}>
+              Explore APIs &rarr;
+            </span>
+          </div>
 
-          <Card
-            title="2. Atomic 30-Day Subscriptions"
-            subtitle="Exact on-chain yoctoNEAR pull-payments"
-            interactive
+          {/* Curved Arrow 1 -> 2 */}
+          <div className="process-arrow-container" aria-hidden="true">
+            <svg width="46" height="32" viewBox="0 0 46 32" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ overflow: "visible" }}>
+              <path d="M 4 20 C 16 6, 30 6, 42 16" stroke="var(--knovara-blue-primary)" strokeWidth="2.5" strokeLinecap="round" />
+              <path d="M 33 12 L 42 16 L 37 23" stroke="var(--knovara-blue-primary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+
+          {/* Step 2 */}
+          <div
+            className="process-step-item"
+            onClick={() => onNavigate("/agent-workspace")}
           >
-            <p style={{ fontSize: "0.9375rem", color: "var(--knovara-text-secondary)", lineHeight: 1.6 }}>
+            <div style={{ position: "relative", width: "90px", height: "90px", marginBottom: "18px" }}>
+              <svg
+                viewBox="0 0 100 100"
+                style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible" }}
+                className="process-sketch-ring"
+              >
+                <ellipse cx="50" cy="50" rx="44" ry="40" transform="rotate(-9 50 50)" fill="none" stroke="var(--knovara-border-strong)" strokeWidth="1.6" strokeDasharray="160 4" opacity="0.85" />
+                <ellipse cx="49" cy="51" rx="41" ry="44" transform="rotate(24 50 50)" fill="none" stroke="var(--knovara-blue-primary)" strokeWidth="1.4" strokeDasharray="140 3" opacity="0.75" />
+                <ellipse cx="51" cy="49" rx="45" ry="41" transform="rotate(-30 50 50)" fill="none" stroke="var(--knovara-border)" strokeWidth="1.5" opacity="0.65" />
+              </svg>
+              <div
+                className="process-badge-circle"
+                style={{
+                  position: "absolute",
+                  top: "50%",
+                  left: "50%",
+                  transform: "translate(-50%, -50%)",
+                  width: "56px",
+                  height: "56px",
+                  borderRadius: "50%",
+                  backgroundColor: "#FFFFFF",
+                  border: "2.5px solid var(--knovara-blue-primary)",
+                  boxShadow: "0 4px 16px rgba(33, 150, 243, 0.22)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontFamily: "var(--font-heading)",
+                  fontWeight: 900,
+                  fontSize: "1.45rem",
+                  color: "var(--knovara-text-primary)",
+                  transition: "all 0.2s ease",
+                }}
+              >
+                2
+              </div>
+            </div>
+            <h3 style={{ fontSize: "1.125rem", fontWeight: 800, color: "var(--knovara-text-primary)", marginBottom: "4px" }}>
+              Atomic Subscriptions
+            </h3>
+            <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--knovara-blue-primary)", fontFamily: "var(--font-mono)", marginBottom: "10px", textTransform: "uppercase" }}>
+              Fixed 30-Day On-Chain Terms
+            </div>
+            <p style={{ fontSize: "0.8125rem", color: "var(--knovara-text-secondary)", lineHeight: 1.55, margin: "0 0 14px 0" }}>
               Dedicated agent accounts subscribe directly on NEAR Protocol. 100% of subscription fees go to publisher royalty balances instantly.
             </p>
-          </Card>
+            <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--knovara-blue-primary)" }}>
+              Agent Workspace &rarr;
+            </span>
+          </div>
 
-          <Card
-            title="3. SSRF-Protected API Gateway"
-            subtitle="Sub-millisecond secure reverse proxy"
-            interactive
+          {/* Curved Arrow 2 -> 3 */}
+          <div className="process-arrow-container" aria-hidden="true">
+            <svg width="46" height="32" viewBox="0 0 46 32" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ overflow: "visible" }}>
+              <path d="M 4 20 C 16 6, 30 6, 42 16" stroke="var(--knovara-blue-primary)" strokeWidth="2.5" strokeLinecap="round" />
+              <path d="M 33 12 L 42 16 L 37 23" stroke="var(--knovara-blue-primary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+
+          {/* Step 3 */}
+          <div
+            className="process-step-item"
+            onClick={() => onNavigate("/publisher")}
           >
-            <p style={{ fontSize: "0.9375rem", color: "var(--knovara-text-secondary)", lineHeight: 1.6 }}>
+            <div style={{ position: "relative", width: "90px", height: "90px", marginBottom: "18px" }}>
+              <svg
+                viewBox="0 0 100 100"
+                style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible" }}
+                className="process-sketch-ring"
+              >
+                <ellipse cx="50" cy="50" rx="44" ry="40" transform="rotate(-9 50 50)" fill="none" stroke="var(--knovara-border-strong)" strokeWidth="1.6" strokeDasharray="160 4" opacity="0.85" />
+                <ellipse cx="49" cy="51" rx="41" ry="44" transform="rotate(24 50 50)" fill="none" stroke="var(--knovara-blue-primary)" strokeWidth="1.4" strokeDasharray="140 3" opacity="0.75" />
+                <ellipse cx="51" cy="49" rx="45" ry="41" transform="rotate(-30 50 50)" fill="none" stroke="var(--knovara-border)" strokeWidth="1.5" opacity="0.65" />
+              </svg>
+              <div
+                className="process-badge-circle"
+                style={{
+                  position: "absolute",
+                  top: "50%",
+                  left: "50%",
+                  transform: "translate(-50%, -50%)",
+                  width: "56px",
+                  height: "56px",
+                  borderRadius: "50%",
+                  backgroundColor: "#FFFFFF",
+                  border: "2.5px solid var(--knovara-blue-primary)",
+                  boxShadow: "0 4px 16px rgba(33, 150, 243, 0.22)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontFamily: "var(--font-heading)",
+                  fontWeight: 900,
+                  fontSize: "1.45rem",
+                  color: "var(--knovara-text-primary)",
+                  transition: "all 0.2s ease",
+                }}
+              >
+                3
+              </div>
+            </div>
+            <h3 style={{ fontSize: "1.125rem", fontWeight: 800, color: "var(--knovara-text-primary)", marginBottom: "4px" }}>
+              SSRF-Protected Gateway
+            </h3>
+            <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--knovara-blue-primary)", fontFamily: "var(--font-mono)", marginBottom: "10px", textTransform: "uppercase" }}>
+              Sub-Millisecond Reverse Proxy
+            </div>
+            <p style={{ fontSize: "0.8125rem", color: "var(--knovara-text-secondary)", lineHeight: 1.55, margin: "0 0 14px 0" }}>
               High-speed reverse proxy validates SHA-256 token hashes, enforces 30s cache freshness via NEAR RPC, and injects encrypted upstream keys.
             </p>
-          </Card>
+            <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--knovara-blue-primary)" }}>
+              Publisher Portal &rarr;
+            </span>
+          </div>
 
-          <Card
-            title="4. Sovereign Owner Governance"
-            subtitle="Transparent human-in-the-loop control"
-            interactive
+          {/* Curved Arrow 3 -> 4 */}
+          <div className="process-arrow-container" aria-hidden="true">
+            <svg width="46" height="32" viewBox="0 0 46 32" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ overflow: "visible" }}>
+              <path d="M 4 20 C 16 6, 30 6, 42 16" stroke="var(--knovara-blue-primary)" strokeWidth="2.5" strokeLinecap="round" />
+              <path d="M 33 12 L 42 16 L 37 23" stroke="var(--knovara-blue-primary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+
+          {/* Step 4 */}
+          <div
+            className="process-step-item"
+            onClick={() => onNavigate("/account")}
           >
-            <p style={{ fontSize: "0.9375rem", color: "var(--knovara-text-secondary)", lineHeight: 1.6 }}>
-              Agents formulate purchase intents; human owners review pricing and terms before signing, preserving total wallet security.
+            <div style={{ position: "relative", width: "90px", height: "90px", marginBottom: "18px" }}>
+              <svg
+                viewBox="0 0 100 100"
+                style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", overflow: "visible" }}
+                className="process-sketch-ring"
+              >
+                <ellipse cx="50" cy="50" rx="44" ry="40" transform="rotate(-9 50 50)" fill="none" stroke="var(--knovara-border-strong)" strokeWidth="1.6" strokeDasharray="160 4" opacity="0.85" />
+                <ellipse cx="49" cy="51" rx="41" ry="44" transform="rotate(24 50 50)" fill="none" stroke="var(--knovara-blue-primary)" strokeWidth="1.4" strokeDasharray="140 3" opacity="0.75" />
+                <ellipse cx="51" cy="49" rx="45" ry="41" transform="rotate(-30 50 50)" fill="none" stroke="var(--knovara-border)" strokeWidth="1.5" opacity="0.65" />
+              </svg>
+              <div
+                className="process-badge-circle"
+                style={{
+                  position: "absolute",
+                  top: "50%",
+                  left: "50%",
+                  transform: "translate(-50%, -50%)",
+                  width: "56px",
+                  height: "56px",
+                  borderRadius: "50%",
+                  backgroundColor: "#FFFFFF",
+                  border: "2.5px solid var(--knovara-blue-primary)",
+                  boxShadow: "0 4px 16px rgba(33, 150, 243, 0.22)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontFamily: "var(--font-heading)",
+                  fontWeight: 900,
+                  fontSize: "1.45rem",
+                  color: "var(--knovara-text-primary)",
+                  transition: "all 0.2s ease",
+                }}
+              >
+                4
+              </div>
+            </div>
+            <h3 style={{ fontSize: "1.125rem", fontWeight: 800, color: "var(--knovara-text-primary)", marginBottom: "4px" }}>
+              Sovereign Governance
+            </h3>
+            <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--knovara-blue-primary)", fontFamily: "var(--font-mono)", marginBottom: "10px", textTransform: "uppercase" }}>
+              100% Direct Pull-Payments
+            </div>
+            <p style={{ fontSize: "0.8125rem", color: "var(--knovara-text-secondary)", lineHeight: 1.55, margin: "0 0 14px 0" }}>
+              Agents formulate purchase intents; human owners review pricing before signing, preserving total wallet security.
             </p>
-          </Card>
+            <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--knovara-blue-primary)" }}>
+              View Royalties &rarr;
+            </span>
+          </div>
         </div>
       </section>
 

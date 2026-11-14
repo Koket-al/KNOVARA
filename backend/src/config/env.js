@@ -39,6 +39,10 @@ export const config = {
   PUBLIC_API_BASE_URL: process.env.PUBLIC_API_BASE_URL
     ? process.env.PUBLIC_API_BASE_URL.replace(/\/$/, "")
     : `http://localhost:${process.env.PORT || "5000"}`,
+
+  // API Gateway & Upstream Security
+  GATEWAY_SECRET_KEY: process.env.GATEWAY_SECRET_KEY || "knovara-default-gateway-secret-key-32b!",
+  ALLOW_LOCAL_GATEWAY_UPSTREAM: process.env.ALLOW_LOCAL_GATEWAY_UPSTREAM === "true",
 };
 
 /**
@@ -94,6 +98,9 @@ export function validatePublicApiBaseUrl(url, nodeEnv = config.NODE_ENV) {
 if (config.NODE_ENV === "production") {
   if (!process.env.SESSION_SECRET || process.env.SESSION_SECRET.length < 32) {
     throw new Error("ERR_CONFIG: SESSION_SECRET must be at least 32 characters in production");
+  }
+  if (!process.env.GATEWAY_SECRET_KEY || process.env.GATEWAY_SECRET_KEY.length < 32) {
+    throw new Error("ERR_CONFIG: GATEWAY_SECRET_KEY must be at least 32 characters in production");
   }
   if (!process.env.MONGODB_URI) {
     throw new Error("ERR_CONFIG: MONGODB_URI is required in production");

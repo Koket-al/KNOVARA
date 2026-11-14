@@ -1,4 +1,5 @@
 import express from "express";
+import { config } from "../config/env.js";
 import { validateToken } from "../services/credentialService.js";
 import { SubscriptionProjection } from "../models/SubscriptionProjection.js";
 import { ApiProduct } from "../models/ApiProduct.js";
@@ -153,7 +154,8 @@ router.post("/assets/:assetId/operations/:operationId", async (req, res) => {
 
   // 7. SSRF Validation
   const allowLocalDev =
-    process.env.NODE_ENV === "test" ||
+    config.NODE_ENV === "test" ||
+    config.ALLOW_LOCAL_GATEWAY_UPSTREAM === true ||
     process.env.ALLOW_LOCAL_GATEWAY_UPSTREAM === "true";
 
   const ssrfCheck = await validateSsrfTarget(provider.base_url, allowLocalDev);
@@ -178,22 +180,39 @@ router.post("/assets/:assetId/operations/:operationId", async (req, res) => {
   }
 
   // 9. Dispatch to upstream provider
-  const upstreamUrl = new URL(endpoint.path, provider.base_url).toString();
+  let finalUpstreamUrl = new URL(endpoint.path, provider.base_url).toString();
+  const httpMethod = (endpoint.method || "POST").toUpperCase();
   const controller = new AbortController();
   const timeoutMs = provider.timeout_ms || 30000;
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   const forwardHeaders = {
-    "Content-Type": "application/json",
     Accept: "application/json",
     [provider.header_name || "x-provider-api-key"]: upstreamSecret,
   };
 
+  let requestBody = undefined;
+  if (httpMethod === "GET" || httpMethod === "HEAD") {
+    // Cannot attach request body to GET/HEAD fetch calls. Forward parameters via URL query string.
+    if (req.body && typeof req.body === "object" && Object.keys(req.body).length > 0) {
+      const urlObj = new URL(finalUpstreamUrl);
+      for (const [k, v] of Object.entries(req.body)) {
+        if (v !== undefined && v !== null) {
+          urlObj.searchParams.set(k, typeof v === "object" ? JSON.stringify(v) : String(v));
+        }
+      }
+      finalUpstreamUrl = urlObj.toString();
+    }
+  } else {
+    forwardHeaders["Content-Type"] = "application/json";
+    requestBody = req.body && Object.keys(req.body).length > 0 ? JSON.stringify(req.body) : undefined;
+  }
+
   try {
-    const upstreamRes = await fetch(upstreamUrl, {
-      method: endpoint.method || "POST",
+    const upstreamRes = await fetch(finalUpstreamUrl, {
+      method: httpMethod,
       headers: forwardHeaders,
-      body: req.body ? JSON.stringify(req.body) : undefined,
+      body: requestBody,
       signal: controller.signal,
     });
 
